@@ -1,7 +1,5 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
-use rust::users;
-use serde::Serialize;
-use sqlx::postgres::PgPoolOptions;
+use actix_web::{web, App, HttpServer};
+use rust::{users, AppState};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -14,17 +12,28 @@ async fn main() -> std::io::Result<()> {
         .parse::<u16>()
         .expect("API_PORT deve ser um número inteiro entre 0 e 65535");
 
-    // Get DATABASE_URL from .env file
-    let db_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL deve ser definido nas variáveis de ambiente");
+    let app_state = AppState::default().await;
 
-    // Connect to database with max connections 100
-    let pool = PgPoolOptions::new()
-        .max_connections(100)
-        .connect(db_url.as_str());
+    match HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(app_state.clone()))
+            .service(users::controller())
+    })
+    .bind((api_host.as_str(), api_port))
+    {
+        Ok(server) => {
+            println!("🚀 Server running at http://{}:{}", api_host, api_port);
+            server
+        }
+        Err(e) => {
+            eprintln!("🔥 Failed to bind server: {}", e);
+            std::process::exit(1);
+        }
+    }
+    .run()
+    .await?;
 
-    HttpServer::new(move || App::new().service(users::controller()))
-        .bind((api_host.as_str(), api_port))?
-        .run()
-        .await
+    println!("\n🛑 Server stopped");
+
+    Ok(())
 }
