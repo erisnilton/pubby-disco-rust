@@ -1332,6 +1332,7 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "dotenvy",
+ "once_cell",
  "serde",
  "serde_json",
  "sqlx",

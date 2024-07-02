@@ -1,44 +1,30 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use rust::users;
 use serde::Serialize;
 use sqlx::postgres::PgPoolOptions;
 
-#[get("/")]
-async fn hello() -> impl Responder {
-    // HttpResponse::Ok().body("Hello world!")
-    let res = Test {
-      message: String::from("aaaa")
-    };
-
-    serde_json::to_string(&res).unwrap()
-}
-
-#[post("/echo")]
-async fn echo(req_body: String) -> impl Responder {
-    HttpResponse::Ok().body(req_body)
-}
-
-async fn manual_hello() -> impl Responder {
-    HttpResponse::Ok().body("Hey there!")
-}
-
-#[derive(Serialize)]
-struct Test {
-  message: String
-}
-
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Load .env file
     dotenvy::dotenv().ok();
-    let db_url = std::env::var("DB_URL").expect("DB_URL nao encontrado");
-    let pool = PgPoolOptions::new().max_connections(100).connect(&db_url);
-    HttpServer::new(|| {
-        App::new()
-            .service(hello)
-            .service(echo)
-            .route("/hey", web::get().to(manual_hello))
-    })
-    .bind(("127.0.0.1", 8080))?
-    .run()
-    .await
+
+    let api_host = std::env::var("API_HOST").unwrap_or("127.0.0.1".to_string());
+    let api_port = std::env::var("API_PORT")
+        .unwrap_or("8080".to_string())
+        .parse::<u16>()
+        .expect("API_PORT deve ser um número inteiro entre 0 e 65535");
+
+    // Get DATABASE_URL from .env file
+    let db_url = std::env::var("DATABASE_URL")
+        .expect("DATABASE_URL deve ser definido nas variáveis de ambiente");
+
+    // Connect to database with max connections 100
+    let pool = PgPoolOptions::new()
+        .max_connections(100)
+        .connect(db_url.as_str());
+
+    HttpServer::new(move || App::new().service(users::controller()))
+        .bind((api_host.as_str(), api_port))?
+        .run()
+        .await
 }
