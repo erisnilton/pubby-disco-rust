@@ -1,7 +1,4 @@
-use sqlx::{
-    postgres::{PgConnectOptions, PgPoolOptions},
-    Postgres,
-};
+use sqlx::{postgres::PgPoolOptions, Postgres};
 
 pub mod users;
 
@@ -23,7 +20,7 @@ impl AppState {
 
         // Connect to database with max connections 100
         let pool = match PgPoolOptions::new()
-            .max_connections(100)
+            .max_connections(4)
             .min_connections(1)
             .connect(&db_url)
             .await
