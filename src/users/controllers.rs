@@ -4,6 +4,7 @@ use actix_web::{
     web::{self, Json},
     Responder,
 };
+use serde_json::json;
 
 use crate::AppState;
 
@@ -24,7 +25,10 @@ async fn get_users(state: web::Data<AppState>) -> impl Responder {
         Ok(result) => result,
         Err(e) => {
             eprintln!("🔥 Failed to fetch users: {}", e);
-            return actix_web::HttpResponse::InternalServerError().finish();
+            return actix_web::HttpResponse::InternalServerError().json(json!({
+                "error": "Internal Server Error",
+                "details": "Failed to fetch users from database"
+            }));
         }
     };
 
@@ -61,7 +65,10 @@ async fn create_user(
         Ok(result) => result,
         Err(e) => {
             eprintln!("🔥 Failed to create user: {}", e);
-            return actix_web::HttpResponse::InternalServerError().finish();
+            return actix_web::HttpResponse::InternalServerError().json(json!({
+                "error": "Internal Server Error",
+                "details": "Failed to create user in database"
+            }));
         }
     };
 
