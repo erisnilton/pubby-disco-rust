@@ -1,6 +1,6 @@
 use actix_web::{
     dev::HttpServiceFactory,
-    post,
+    get, post,
     web::{self, Json},
     Responder,
 };
@@ -8,7 +8,36 @@ use actix_web::{
 use crate::AppState;
 
 pub fn controller() -> impl HttpServiceFactory {
-    web::scope("/users").service(create_user)
+    web::scope("/users").service(get_users).service(create_user)
+}
+
+#[get("")]
+async fn get_users(state: web::Data<AppState>) -> impl Responder {
+    let result = match sqlx::query!(
+        r#"
+            SELECT * FROM users
+        "#
+    )
+    .fetch_all(&state.db)
+    .await
+    {
+        Ok(result) => result,
+        Err(e) => {
+            eprintln!("🔥 Failed to fetch users: {}", e);
+            return actix_web::HttpResponse::InternalServerError().finish();
+        }
+    };
+
+    actix_web::HttpResponse::Ok().json(
+        result
+            .into_iter()
+            .map(|user| crate::users::dto::UserPresenterDTO {
+                id: user.id.to_string(),
+                name: user.name,
+                email: user.email,
+            })
+            .collect::<Vec<_>>(),
+    )
 }
 
 #[post("")]
