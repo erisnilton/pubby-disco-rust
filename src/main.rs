@@ -7,10 +7,17 @@ async fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
 
     let api_host = std::env::var("API_HOST").unwrap_or("127.0.0.1".to_string());
-    let api_port = std::env::var("API_PORT")
+    let api_port = match std::env::var("API_PORT")
         .unwrap_or("8080".to_string())
         .parse::<u16>()
-        .expect("API_PORT deve ser um número inteiro entre 0 e 65535");
+    {
+        Ok(port) => port,
+        Err(_) => {
+            eprintln!("🔥 API_PORT deve ser um número inteiro entre 0 e 65535");
+
+            std::process::exit(1);
+        }
+    };
 
     let app_state = AppState::default().await;
 
