@@ -6,6 +6,9 @@ async fn main() -> std::io::Result<()> {
     // Load .env file
     dotenvy::dotenv().ok();
 
+    // Initialize logger
+    env_logger::init();
+
     let api_host = std::env::var("API_HOST").unwrap_or("127.0.0.1".to_string());
     let api_port = match std::env::var("API_PORT")
         .unwrap_or("8080".to_string())
