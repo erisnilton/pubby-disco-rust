@@ -1,4 +1,7 @@
-use sqlx::{postgres::PgPoolOptions, Postgres};
+use sqlx::{
+    postgres::{PgConnectOptions, PgPoolOptions},
+    Postgres,
+};
 
 pub mod users;
 
@@ -10,8 +13,13 @@ pub struct AppState {
 impl AppState {
     pub async fn default() -> Self {
         // Get DATABASE_URL from .env file
-        let db_url = std::env::var("DATABASE_URL")
-            .expect("DATABASE_URL deve ser definido nas variáveis de ambiente");
+        let db_url = match std::env::var("DATABASE_URL") {
+            Ok(url) => url,
+            Err(_) => {
+                eprintln!("🔥 DATABASE_URL not defined");
+                std::process::exit(1);
+            }
+        };
 
         // Connect to database with max connections 100
         let pool = match PgPoolOptions::new()
