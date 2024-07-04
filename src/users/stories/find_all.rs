@@ -1,10 +1,11 @@
 use crate::users::{
-    dto::UserPresenterDTO,
+    dto::{PageParams, Paged, UserPresenterDTO},
     repository::{UserRepository, UserRepositoryError},
 };
 
 pub async fn find_all(
     repository: &impl UserRepository,
-) -> Result<Vec<UserPresenterDTO>, UserRepositoryError> {
-    repository.find_all().await
+    page_params: PageParams,
+) -> Result<Paged<UserPresenterDTO>, UserRepositoryError> {
+    repository.find_all(page_params).await
 }

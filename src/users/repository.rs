@@ -1,4 +1,4 @@
-use super::dto::{CreateUserDto, UserPresenterDTO};
+use super::dto::{CreateUserDto, PageParams, Paged, UserPresenterDTO};
 
 #[derive(Debug)]
 pub enum UserRepositoryError {
@@ -16,6 +16,9 @@ impl std::fmt::Display for UserRepositoryError {
 }
 
 pub trait UserRepository {
-    async fn find_all(&self) -> Result<Vec<UserPresenterDTO>, UserRepositoryError>;
+    async fn find_all(
+        &self,
+        page_params: PageParams,
+    ) -> Result<Paged<UserPresenterDTO>, UserRepositoryError>;
     async fn create(&self, user: CreateUserDto) -> Result<UserPresenterDTO, UserRepositoryError>;
 }

@@ -6,21 +6,24 @@ use actix_web::{
 };
 use serde_json::json;
 
-use crate::{users::repository::UserRepositoryError, AppState};
+use crate::{users::dto::PageParams, AppState};
 
-use crate::users::repository::{UserRepository, UserRepositoryError::*};
-
-use super::dto::UserPresenterDTO;
+use crate::users::repository::UserRepositoryError::*;
 
 pub fn controller() -> impl HttpServiceFactory {
     web::scope("/users").service(get_users).service(create_user)
 }
 
 #[get("")]
-async fn get_users(state: web::Data<AppState>) -> impl Responder {
+async fn get_users(
+    state: web::Data<AppState>,
+    page_params: web::Query<PageParams>,
+) -> impl Responder {
     let user_repository = crate::infra::SqlXUserRepository::new(state.db.clone());
 
-    match crate::users::stories::find_all(&user_repository).await {
+    let page_params = page_params.into_inner();
+
+    match crate::users::stories::find_all(&user_repository, page_params).await {
         Ok(result) => actix_web::HttpResponse::Ok().json(result),
         Err(e) => match e {
             Conflict(message) => {
