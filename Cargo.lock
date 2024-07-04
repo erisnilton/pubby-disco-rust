@@ -1507,6 +1507,7 @@ name = "rust"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "derive_more",
  "dotenvy",
  "env_logger",
  "log",

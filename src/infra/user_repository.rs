@@ -1,5 +1,10 @@
 use std::borrow::Borrow;
 
+use actix_web::{
+    body::BoxBody, error, http::StatusCode, HttpResponse, Responder, ResponseError, Result,
+};
+// use derive_more::{Display, Error};
+use serde_json::json;
 use sqlx::{Pool, Postgres};
 
 use crate::users::{
@@ -94,6 +99,32 @@ impl UserRepository for SqlXUserRepository {
                     ));
                 }
             },
+        };
+    }
+}
+
+impl ResponseError for UserRepositoryError {
+    fn error_response(&self) -> HttpResponse {
+        match self {
+            UserRepositoryError::Conflict(message) => {
+                 HttpResponse::Conflict().json(json!({
+                    "error": "Conflict",
+                    "message": message
+                }))
+            }
+            UserRepositoryError::InternalServerError(message) => {
+                HttpResponse::InternalServerError().json(json!({
+                    "error": "Internal Server Error",
+                    "details": message
+                }))
+            }
+        }
+    }
+
+    fn status_code(&self) -> StatusCode {
+        return match self {
+            UserRepositoryError::Conflict(_) => StatusCode::CONFLICT,
+            UserRepositoryError::InternalServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
     }
 }
