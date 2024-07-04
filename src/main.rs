@@ -1,3 +1,6 @@
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 use actix_web::{web, App, HttpServer};
 use rust::{users, AppState};
 
