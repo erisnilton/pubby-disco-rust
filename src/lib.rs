@@ -1,6 +1,7 @@
 use sqlx::{postgres::PgPoolOptions, Postgres};
 
 pub mod users;
+pub mod infra;
 
 #[derive(Clone)]
 pub struct AppState {

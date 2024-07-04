@@ -15,4 +15,4 @@ tokio = "1.38.0"
 
 [dependencies.sqlx]
 version = "0.7.4"
-features = ["runtime-tokio", "uuid", "chrono", "postgres", "macros"]
+features = ["runtime-tokio", "uuid", "chrono", "postgres", "macros", "tls-native-tls"]
