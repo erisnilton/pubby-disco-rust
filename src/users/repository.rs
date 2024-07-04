@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use super::dto::{CreateUserDto, PageParams, Paged, UserPresenterDTO};
 
 #[derive(Debug)]
@@ -16,9 +18,12 @@ impl std::fmt::Display for UserRepositoryError {
 }
 
 pub trait UserRepository {
-    async fn find_all(
+    fn find_all(
         &self,
         page_params: PageParams,
-    ) -> Result<Paged<UserPresenterDTO>, UserRepositoryError>;
-    async fn create(&self, user: CreateUserDto) -> Result<UserPresenterDTO, UserRepositoryError>;
+    ) -> impl Future<Output = Result<Paged<UserPresenterDTO>, UserRepositoryError>>;
+    fn create(
+        &self,
+        user: CreateUserDto,
+    ) -> impl Future<Output = Result<UserPresenterDTO, UserRepositoryError>>;
 }

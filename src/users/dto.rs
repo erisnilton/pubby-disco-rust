@@ -1,6 +1,4 @@
-use std::default;
-
-use actix_web::{body::BoxBody, web::JsonBody, Responder};
+use actix_web::{body::BoxBody, Responder};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
@@ -59,7 +57,7 @@ impl<T: Serialize> Paged<T> {
 impl Responder for UserPresenterDTO {
     type Body = BoxBody;
     fn respond_to(self, _req: &actix_web::HttpRequest) -> actix_web::HttpResponse {
-        return actix_web::HttpResponse::Ok().json(self);
+        actix_web::HttpResponse::Ok().json(self)
     }
 }
 
@@ -67,7 +65,7 @@ impl<T: Serialize> Responder for Paged<T> {
     type Body = BoxBody;
 
     fn respond_to(self, _req: &actix_web::HttpRequest) -> actix_web::HttpResponse<Self::Body> {
-        return actix_web::HttpResponse::Ok().json(self);
+        actix_web::HttpResponse::Ok().json(self)
     }
 }
 

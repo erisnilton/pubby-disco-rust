@@ -1,9 +1,4 @@
-use std::borrow::Borrow;
-
-use actix_web::{
-    body::BoxBody, error, http::StatusCode, HttpResponse, Responder, ResponseError, Result,
-};
-// use derive_more::{Display, Error};
+use actix_web::{http::StatusCode, HttpResponse, ResponseError, Result};
 use serde_json::json;
 use sqlx::{Pool, Postgres};
 
@@ -63,13 +58,13 @@ impl UserRepository for SqlXUserRepository {
                     })
                     .collect::<Vec<_>>();
 
-                return Ok(Paged::from_total_items(items, count as u64, &page_params));
+                Ok(Paged::from_total_items(items, count as u64, &page_params))
             }
             Err(e) => {
                 eprintln!("🔥 Failed to fetch users: {}", e);
-                return Err(UserRepositoryError::InternalServerError(
+                Err(UserRepositoryError::InternalServerError(
                     "Failed to fetch users from database".to_string(),
-                ));
+                ))
             }
         }
     }
@@ -138,9 +133,9 @@ impl ResponseError for UserRepositoryError {
     }
 
     fn status_code(&self) -> StatusCode {
-        return match self {
+        match self {
             UserRepositoryError::Conflict(_) => StatusCode::CONFLICT,
             UserRepositoryError::InternalServerError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        };
+        }
     }
 }
