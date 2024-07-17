@@ -16,7 +16,7 @@ pub struct UserPresenterDTO {
 }
 
 #[derive(Debug, Serialize)]
-pub struct Paged<T: Serialize> {
+pub struct Paged<T> {
     pub items: Vec<T>,
     pub total_pages: u64,
     pub total_items: u64,
