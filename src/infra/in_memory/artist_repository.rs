@@ -23,7 +23,7 @@ impl ArtistRepository for InMemoryArtistRepository {
 
     async fn create(
         &self,
-        input: &Artist,
+        _input: &Artist,
     ) -> Result<Artist, crate::domain::artists::repository::ArtistRepositoryError> {
         todo!()
     }
@@ -36,7 +36,11 @@ pub mod tests {
 
     #[tokio::test]
     async fn test_find_by_slug() {
-        let artist = Artist::new("name".to_string(), "slug".to_string(), "country".to_string());
+        let artist = Artist::new(
+            "name".to_string(),
+            "slug".to_string(),
+            "country".to_string(),
+        );
         let mut artists = HashMap::new();
         artists.insert(artist.slug.clone(), artist.clone());
         let repo = InMemoryArtistRepository { artists };
@@ -47,7 +51,11 @@ pub mod tests {
 
     #[tokio::test]
     async fn test_find_by_slug_not_found() {
-        let artist = Artist::new("name".to_string(), "slug".to_string(), "country".to_string());
+        let artist = Artist::new(
+            "name".to_string(),
+            "slug".to_string(),
+            "country".to_string(),
+        );
         let artists = HashMap::new();
         let repo = InMemoryArtistRepository { artists };
 

@@ -1,3 +1,15 @@
 {
-    "rust-analyzer.check.command": "clippy"
+    "rust-analyzer.check.command": "clippy",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.rulers": [
+        80
+    ],
+    "editor.stickyScroll.enabled": false,
+    "workbench.tree.enableStickyScroll": false,
+    "files.autoSave": "onFocusChange",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit",
+    },
 }

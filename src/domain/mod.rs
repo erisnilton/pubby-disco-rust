@@ -1,2 +1,4 @@
+pub mod activity;
 pub mod artists;
-pub mod shared;
+pub mod genre;
+pub mod user;
