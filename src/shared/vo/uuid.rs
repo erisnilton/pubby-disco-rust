@@ -1,8 +1,6 @@
 use std::fmt::{self, Display, Formatter};
 
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use validator::ValidationError;
 
 pub enum UUIDError {
   InvalidUUID,

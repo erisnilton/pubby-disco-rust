@@ -1,8 +1,9 @@
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-use actix_web::{web, App, HttpServer};
-use rust::{ infra, users, AppState};
+use actix_web::{error::JsonPayloadError, web, App, Error, HttpResponse, HttpServer};
+use rust::{infra, AppState};
+use serde_json::json;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -30,7 +31,26 @@ async fn main() -> std::io::Result<()> {
   match HttpServer::new(move || {
     App::new()
       .app_data(web::Data::new(app_state.clone()))
-      .service(users::controller())
+      .app_data(
+        web::JsonConfig::default()
+          .limit(4096)
+          .error_handler(|error, _req| match error {
+            JsonPayloadError::ContentType => actix_web::error::ErrorNotAcceptable(json!({
+              "name": "NotAcceptable",
+              "message": "Content-Type must be application/json"
+            })),
+            JsonPayloadError::Deserialize(json_error) => actix_web::error::ErrorBadRequest(json!({
+              "name": "BadRequest",
+              "message": "Invalid JSON",
+              "details": json_error.to_string()
+            })),
+            _ => actix_web::error::ErrorInternalServerError(json!({
+              "name": "InternalServerError",
+              "message": "Internal Server Error"
+            })),
+          }),
+      )
+      .service(infra::actix::user::controller())
       .service(infra::actix::activity::controller())
   })
   .bind((api_host.as_str(), api_port))

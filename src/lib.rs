@@ -3,7 +3,6 @@ use sqlx::{postgres::PgPoolOptions, Postgres};
 pub mod domain;
 pub mod infra;
 pub mod shared;
-pub mod users;
 
 #[derive(Clone)]
 pub struct AppState {

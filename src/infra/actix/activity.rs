@@ -1,6 +1,7 @@
 use actix_web::{
+  dev::HttpServiceFactory,
   post,
-  web::{Data, Json},
+  web::{self, Data, Json},
   Responder,
 };
 use serde_json::json;
@@ -46,4 +47,8 @@ async fn create_activity(
       }))
     }
   }
+}
+
+pub fn controller() -> impl HttpServiceFactory {
+  web::scope("/activities").service(create_activity)
 }

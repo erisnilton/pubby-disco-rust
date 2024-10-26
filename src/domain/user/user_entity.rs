@@ -1,5 +1,3 @@
-use chrono::Utc;
-
 use crate::shared::vo::UUID4;
 
 #[derive(Debug, Clone)]

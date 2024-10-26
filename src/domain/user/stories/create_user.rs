@@ -1,6 +1,9 @@
 use validator::{Validate, ValidationErrors};
 
-use crate::domain::user::{dto::UserRegisterDto, User, UserRepository, UserRepositoryError};
+use crate::{
+  domain::user::{dto::UserRegisterDto, User, UserRepository, UserRepositoryError},
+  shared::password_hash::PasswordHash,
+};
 
 #[derive(Debug)]
 pub enum CreateUserStoryError {
@@ -23,6 +26,7 @@ impl From<ValidationErrors> for CreateUserStoryError {
 
 pub async fn create_user(
   user_repository: &mut impl UserRepository,
+  password_hash: &impl PasswordHash,
   input: UserRegisterDto,
 ) -> Result<User, CreateUserStoryError> {
   input.validate()?;
@@ -39,7 +43,7 @@ pub async fn create_user(
   let user = user_repository
     .create(User {
       username: input.username,
-      password: input.password,
+      password: password_hash.hash_password(&input.password),
       email: input.email,
       display_name: input.display_name.unwrap_or_default(),
       ..Default::default()
@@ -51,6 +55,7 @@ pub async fn create_user(
 
 #[cfg(test)]
 mod test {
+  use crate::infra::bcrypt::BcryptPasswordHash;
   use std::collections::HashMap;
 
   use super::*;
@@ -77,6 +82,7 @@ mod test {
   #[tokio::test]
   async fn create_user_should_return_error_when_user_exists() {
     let mut user_repository = InMemoryUserRepository::default();
+    let password_hash = BcryptPasswordHash;
 
     let input = UserRegisterDto {
       username: String::from("username"),
@@ -96,7 +102,7 @@ mod test {
       .await
       .unwrap();
 
-    let result = create_user(&mut user_repository, input).await;
+    let result = create_user(&mut user_repository, &password_hash, input).await;
 
     assert!(matches!(
       result,
@@ -107,6 +113,7 @@ mod test {
   #[tokio::test]
   async fn create_user_should_return_user_when_user_is_created() {
     let mut user_repository = InMemoryUserRepository::default();
+    let password_hash = BcryptPasswordHash;
 
     let input = UserRegisterDto {
       username: String::from("username"),
@@ -115,7 +122,7 @@ mod test {
       display_name: None,
     };
 
-    let result = create_user(&mut user_repository, input.clone()).await;
+    let result = create_user(&mut user_repository, &password_hash, input.clone()).await;
 
     assert!(matches!(result, Ok(user) if user.username == input.username));
   }

@@ -1,5 +1,5 @@
 use crate::{
-  domain::genre::dto::{CreateGenreDto, UpdateGenreDto},
+  domain::genre::dto::CreateGenreDto,
   shared::vo::{CollaborativeEntityId, UpdateCollaborativeEntityDto},
 };
 

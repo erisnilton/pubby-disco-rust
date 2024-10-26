@@ -2,7 +2,8 @@ POST http://localhost:8080/users
 Content-Type: application/json
 
 {
-    "name": "User",
-    "email": "user@abc.com",
+    "username": "erisnilton",
+    "display_name": "Eris Nilton",
+    "email": "contato@erisnilton.dev",
     "password": "supersecret"
 }
