@@ -1,0 +1,2 @@
+GET http://localhost:8080/users/me
+Cookie: id=lIAE2iG70VL1f3xJULQ7RLVq9E2S1Bs4mdDPULXDhrEaCmxdtgczdrecWhUvk6rFSk5nE3kpW9MO4cgdGbh%2FFCl9gMPUG+b3uj0JRf336fhe2P0UqOSzYw%3D%3D;

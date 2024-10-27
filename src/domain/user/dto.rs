@@ -15,3 +15,12 @@ pub struct UserRegisterDto {
   #[validate(email)]
   pub email: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct UserLoginDto {
+  #[validate(length(min = 1))]
+  pub username: String,
+
+  #[validate(length(min = 1))]
+  pub password: String,
+}

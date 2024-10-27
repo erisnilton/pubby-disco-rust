@@ -42,7 +42,7 @@ pub async fn create_user(
 
   let user = user_repository
     .create(User {
-      username: input.username,
+      username: input.username.clone(),
       password: password_hash.hash_password(&input.password),
       email: input.email,
       display_name: input.display_name.unwrap_or_default(),

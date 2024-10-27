@@ -1,7 +1,9 @@
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-use actix_web::{error::JsonPayloadError, web, App, Error, HttpResponse, HttpServer};
+use actix_session::SessionMiddleware;
+use actix_web::{cookie::Key, error::JsonPayloadError, web, App, Error, HttpResponse, HttpServer};
+use base64::Engine;
 use rust::{infra, AppState};
 use serde_json::json;
 
@@ -27,9 +29,23 @@ async fn main() -> std::io::Result<()> {
   };
 
   let app_state = AppState::default().await;
+  let key = Key::from(
+    base64::prelude::BASE64_STANDARD
+      .decode(
+        std::env::var("COOKIE_SECRET")
+          .expect("COOKIE_SECRET must be set")
+          .as_str(),
+      )
+      .expect("COOKIE_SECRET must be a valid base64 string")
+      .as_slice(),
+  );
 
   match HttpServer::new(move || {
     App::new()
+      .wrap(SessionMiddleware::new(
+        actix_session::storage::CookieSessionStore::default(),
+        key.clone(),
+      ))
       .app_data(web::Data::new(app_state.clone()))
       .app_data(
         web::JsonConfig::default()
