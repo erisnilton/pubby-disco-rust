@@ -10,6 +10,8 @@ pub enum GenreRepositoryError {
 }
 
 pub trait GenreRepository {
-  fn find_by_id(&mut self, id: &UUID4)
-    -> impl Future<Output = Result<Genre, GenreRepositoryError>>;
+  fn find_by_id(
+    &mut self,
+    id: &UUID4,
+  ) -> impl Future<Output = Result<Option<Genre>, GenreRepositoryError>>;
 }

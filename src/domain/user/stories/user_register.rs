@@ -1,7 +1,7 @@
 use validator::{Validate, ValidationErrors};
 
 use crate::{
-  domain::user::{dto::UserRegisterDto, User, UserRepository, UserRepositoryError},
+  domain::user::{User, UserRepository, UserRepositoryError},
   shared::password_hash::PasswordHash,
 };
 
@@ -24,10 +24,25 @@ impl From<ValidationErrors> for CreateUserStoryError {
   }
 }
 
-pub async fn create_user(
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, validator::Validate)]
+pub struct Input {
+  #[validate(length(min = 1, max = 80))]
+  pub username: String,
+
+  #[validate(length(min = 1, max = 128))]
+  pub display_name: Option<String>,
+
+  #[validate(length(min = 6, max = 255))]
+  pub password: String,
+
+  #[validate(email)]
+  pub email: String,
+}
+
+pub async fn execute(
   user_repository: &mut impl UserRepository,
   password_hash: &impl PasswordHash,
-  input: UserRegisterDto,
+  input: Input,
 ) -> Result<User, CreateUserStoryError> {
   input.validate()?;
 
@@ -56,35 +71,15 @@ pub async fn create_user(
 #[cfg(test)]
 mod test {
   use crate::infra::bcrypt::BcryptPasswordHash;
-  use std::collections::HashMap;
 
   use super::*;
 
-  #[derive(Debug, Default, Clone)]
-  struct InMemoryUserRepository {
-    users: HashMap<String, User>,
-  }
-
-  impl UserRepository for InMemoryUserRepository {
-    async fn create(&mut self, user: User) -> Result<User, UserRepositoryError> {
-      self.users.insert(user.username.clone(), user.clone());
-      Ok(user)
-    }
-
-    async fn find_by_username(
-      &mut self,
-      username: impl Into<String>,
-    ) -> Result<Option<User>, UserRepositoryError> {
-      Ok(self.users.get(&username.into()).cloned())
-    }
-  }
-
   #[tokio::test]
   async fn create_user_should_return_error_when_user_exists() {
-    let mut user_repository = InMemoryUserRepository::default();
+    let mut user_repository = crate::infra::in_memory::InMemoryUserRepository::default();
     let password_hash = BcryptPasswordHash;
 
-    let input = UserRegisterDto {
+    let input = Input {
       username: String::from("username"),
       password: String::from("password"),
       email: String::from("user@gmail.com"),
@@ -102,7 +97,12 @@ mod test {
       .await
       .unwrap();
 
-    let result = create_user(&mut user_repository, &password_hash, input).await;
+    let result = crate::domain::user::stories::user_register::execute(
+      &mut user_repository,
+      &password_hash,
+      input,
+    )
+    .await;
 
     assert!(matches!(
       result,
@@ -112,17 +112,22 @@ mod test {
 
   #[tokio::test]
   async fn create_user_should_return_user_when_user_is_created() {
-    let mut user_repository = InMemoryUserRepository::default();
+    let mut user_repository = crate::infra::in_memory::InMemoryUserRepository::default();
     let password_hash = BcryptPasswordHash;
 
-    let input = UserRegisterDto {
+    let input = Input {
       username: String::from("username"),
       password: String::from("password"),
       email: String::from("user@gmail.com"),
       display_name: None,
     };
 
-    let result = create_user(&mut user_repository, &password_hash, input.clone()).await;
+    let result = crate::domain::user::stories::user_register::execute(
+      &mut user_repository,
+      &password_hash,
+      input.clone(),
+    )
+    .await;
 
     assert!(matches!(result, Ok(user) if user.username == input.username));
   }

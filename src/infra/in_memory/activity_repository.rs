@@ -1,10 +1,21 @@
 use std::collections::HashMap;
 
-use crate::domain::activity::{Activity, ActivityRepository};
+use crate::{
+  domain::activity::{Activity, ActivityRepository},
+  AppState,
+};
 
 #[derive(Debug, Default)]
 pub struct InMemoryActivityRepository {
   pub activities: HashMap<String, Activity>,
+}
+
+impl InMemoryActivityRepository {
+  pub fn new(_: &AppState) -> Self {
+    Self {
+      activities: HashMap::new(),
+    }
+  }
 }
 
 impl ActivityRepository for InMemoryActivityRepository {

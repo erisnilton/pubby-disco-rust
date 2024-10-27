@@ -2,10 +2,12 @@
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 use actix_session::SessionMiddleware;
-use actix_web::{cookie::Key, error::JsonPayloadError, web, App, Error, HttpResponse, HttpServer};
+use actix_web::{cookie::Key, error::JsonPayloadError, web, App, HttpServer};
 use base64::Engine;
 use rust::{infra, AppState};
 use serde_json::json;
+
+use actix_web::middleware::Logger;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -32,20 +34,50 @@ async fn main() -> std::io::Result<()> {
   let key = Key::from(
     base64::prelude::BASE64_STANDARD
       .decode(
-        std::env::var("COOKIE_SECRET")
-          .expect("COOKIE_SECRET must be set")
+        std::env::var("SESSION_SECRET")
+          .expect("SESSION_SECRET must be set")
           .as_str(),
       )
-      .expect("COOKIE_SECRET must be a valid base64 string")
+      .expect("SESSION_SECRET must be a valid base64 string")
       .as_slice(),
   );
 
   match HttpServer::new(move || {
     App::new()
-      .wrap(SessionMiddleware::new(
-        actix_session::storage::CookieSessionStore::default(),
-        key.clone(),
-      ))
+      .wrap(Logger::default())
+      .wrap(
+        SessionMiddleware::builder(
+          actix_session::storage::CookieSessionStore::default(),
+          key.clone(),
+        )
+        .cookie_name(std::env::var("SESSION_COOKIE_NAME").unwrap_or("session_id".to_string()))
+        .cookie_domain(std::env::var("SESSION_COOKIE_DOMAIN").ok())
+        .cookie_http_only(
+          std::env::var("SESSION_COOKIE_HTTP_ONLY")
+            .unwrap_or("true".to_string())
+            .parse::<bool>()
+            .unwrap(),
+        )
+        .cookie_secure(
+          std::env::var("SESSION_COOKIE_SECURE")
+            .unwrap_or("false".to_string())
+            .parse::<bool>()
+            .unwrap(),
+        )
+        .session_lifecycle(
+          actix_session::config::PersistentSession::default()
+            .session_ttl(actix_web::cookie::time::Duration::seconds(
+              std::env::var("SESSION_TTL")
+                .unwrap_or("86400".to_string())
+                .parse()
+                .unwrap(),
+            ))
+            .session_ttl_extension_policy(
+              actix_session::config::TtlExtensionPolicy::OnEveryRequest,
+            ),
+        )
+        .build(),
+      )
       .app_data(web::Data::new(app_state.clone()))
       .app_data(
         web::JsonConfig::default()
@@ -66,8 +98,8 @@ async fn main() -> std::io::Result<()> {
             })),
           }),
       )
-      .service(infra::actix::user::controller())
-      .service(infra::actix::activity::controller())
+      .service(infra::actix::controllers::user())
+      .service(infra::actix::controllers::activity())
   })
   .bind((api_host.as_str(), api_port))
   {

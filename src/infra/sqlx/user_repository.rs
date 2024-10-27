@@ -1,14 +1,19 @@
 use uuid::Uuid;
 
-use crate::domain::user::{User, UserRepository, UserRepositoryError};
+use crate::{
+  domain::user::{User, UserRepository, UserRepositoryError},
+  AppState,
+};
 
-pub struct SqlUserRepository {
+pub struct SqlxUserRepository {
   pool: sqlx::PgPool,
 }
 
-impl SqlUserRepository {
-  pub fn new(pool: sqlx::PgPool) -> Self {
-    Self { pool }
+impl SqlxUserRepository {
+  pub fn new(state: &AppState) -> Self {
+    Self {
+      pool: state.db.clone(),
+    }
   }
 }
 
@@ -54,7 +59,7 @@ impl From<UserRecord> for User {
   }
 }
 
-impl UserRepository for SqlUserRepository {
+impl UserRepository for SqlxUserRepository {
   async fn create(
     &mut self,
     user: crate::domain::user::User,
@@ -87,7 +92,7 @@ impl UserRepository for SqlUserRepository {
 
     let user_record = sqlx::query_as!(
       UserRecord,
-      r#"SELECT "id", "username", "password", "email", "display_name", "is_curator", "created_at", "updated_at" FROM "users" WHERE "username" = $1"#,
+      r#"SELECT * FROM "users" WHERE "username" = $1"#,
       username
     )
     .fetch_optional(&self.pool)
@@ -106,7 +111,7 @@ mod tests {
   const TEST_EMAIL: &str = "user@test.com";
 
   async fn drop_old_data() {
-    let AppState { db } = AppState::default().await;
+    let db = AppState::default().await.db;
 
     // Delete old data
     sqlx::query!(r#"DELETE FROM "users" WHERE "email" = $1"#r, TEST_EMAIL)
@@ -122,9 +127,9 @@ mod tests {
 
     drop_old_data().await;
 
-    let AppState { db } = AppState::default().await;
+    let state = AppState::default().await;
 
-    let mut user_repository = SqlUserRepository::new(db);
+    let mut user_repository = SqlxUserRepository::new(&state);
 
     let username = String::from("test");
     let password = String::from("test");
@@ -154,11 +159,11 @@ mod tests {
     // Load .env file
     dotenvy::dotenv().ok();
 
-    let AppState { db } = AppState::default().await;
+    let state = AppState::default().await;
 
     drop_old_data().await;
 
-    let mut user_repository = SqlUserRepository::new(db);
+    let mut user_repository = SqlxUserRepository::new(&state);
 
     let username = String::from("test");
     let password = String::from("test");
@@ -194,11 +199,11 @@ mod tests {
     // Load .env file
     dotenvy::dotenv().ok();
 
-    let AppState { db } = AppState::default().await;
+    let state: AppState = AppState::default().await;
 
     drop_old_data().await;
 
-    let mut user_repository = SqlUserRepository::new(db);
+    let mut user_repository = SqlxUserRepository::new(&state);
 
     let username = String::from("test");
 

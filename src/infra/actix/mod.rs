@@ -1,3 +1,3 @@
-pub mod activity;
-pub mod user;
-// pub mod genre;
+pub mod controllers;
+pub mod dto;
+pub mod presenters;

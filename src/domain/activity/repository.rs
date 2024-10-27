@@ -5,6 +5,7 @@ use super::Activity;
 #[derive(Debug)]
 pub enum ActivityRepositoryError {
   InternalServerError(String),
+  EntityNotFound,
 }
 
 pub trait ActivityRepository {

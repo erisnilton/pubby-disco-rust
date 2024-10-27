@@ -1,5 +1,5 @@
 use crate::{
-  domain::user::{dto::UserLoginDto, User, UserRepository, UserRepositoryError},
+  domain::user::{User, UserRepository, UserRepositoryError},
   shared::password_hash::PasswordHash,
 };
 
@@ -15,10 +15,19 @@ impl From<UserRepositoryError> for LoginError {
   }
 }
 
-pub async fn login(
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, validator::Validate)]
+pub struct Input {
+  #[validate(length(min = 1))]
+  pub username: String,
+
+  #[validate(length(min = 1))]
+  pub password: String,
+}
+
+pub async fn execute(
   user_repository: &mut impl UserRepository,
   password_hash: &impl PasswordHash,
-  input: UserLoginDto,
+  input: Input,
 ) -> Result<User, LoginError> {
   let user = user_repository.find_by_username(input.username).await?;
 
@@ -33,33 +42,14 @@ pub async fn login(
 
 #[cfg(test)]
 mod test {
+  use crate::domain::user::stories::user_login;
   use crate::infra::bcrypt::BcryptPasswordHash;
-  use std::collections::HashMap;
 
   use super::*;
 
-  #[derive(Debug, Default, Clone)]
-  struct InMemoryUserRepository {
-    users: HashMap<String, User>,
-  }
-
-  impl UserRepository for InMemoryUserRepository {
-    async fn create(&mut self, user: User) -> Result<User, UserRepositoryError> {
-      self.users.insert(user.username.clone(), user.clone());
-      Ok(user)
-    }
-
-    async fn find_by_username(
-      &mut self,
-      username: impl Into<String>,
-    ) -> Result<Option<User>, UserRepositoryError> {
-      Ok(self.users.get(&username.into()).cloned())
-    }
-  }
-
   #[tokio::test]
   async fn test_should_login() {
-    let mut user_repository = InMemoryUserRepository::default();
+    let mut user_repository = crate::infra::in_memory::InMemoryUserRepository::default();
     let password_hash = BcryptPasswordHash;
     let user = User {
       username: "test".to_string(),
@@ -71,10 +61,10 @@ mod test {
 
     user_repository.create(user.clone()).await.unwrap();
 
-    let result = login(
+    let result = user_login::execute(
       &mut user_repository,
       &password_hash,
-      UserLoginDto {
+      user_login::Input {
         username: user.username.clone(),
         password: "password".to_string(),
       },
@@ -87,7 +77,7 @@ mod test {
 
   #[tokio::test]
   async fn test_should_return_error_when_user_credentials_is_invalid() {
-    let mut user_repository = InMemoryUserRepository::default();
+    let mut user_repository = crate::infra::in_memory::InMemoryUserRepository::default();
     let password_hash = BcryptPasswordHash;
 
     let user = User {
@@ -107,10 +97,10 @@ mod test {
     ];
 
     for (username, password) in credentials {
-      let result = login(
+      let result = user_login::execute(
         &mut user_repository,
         &password_hash,
-        UserLoginDto {
+        Input {
           username: username.to_string(),
           password: password.to_string(),
         },

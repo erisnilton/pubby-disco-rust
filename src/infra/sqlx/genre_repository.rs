@@ -27,22 +27,26 @@ impl GenreRepository for SqlxGenreRepository {
   async fn find_by_id(
     &mut self,
     id: &crate::shared::vo::UUID4,
-  ) -> Result<crate::domain::genre::Genre, crate::domain::genre::GenreRepositoryError> {
-    let result: GenreRecord = sqlx::query_as(r#"SELECT * FROM "genre" WHERE "id" = $1 LIMIT 1"#)
-      .bind(&id.0)
-      .fetch_one(&self.db)
-      .await
-      .map_err(|err| GenreRepositoryError::InternalServerError(err.to_string()))?;
+  ) -> Result<Option<crate::domain::genre::Genre>, crate::domain::genre::GenreRepositoryError> {
+    let result: Result<GenreRecord, sqlx::Error> =
+      sqlx::query_as(r#"SELECT * FROM "genre" WHERE "id" = $1 LIMIT 1"#)
+        .bind(&id.0)
+        .fetch_one(&self.db)
+        .await;
 
-    Ok(Genre {
-      id: UUID4::new(result.id.to_string()).unwrap_or_default(),
-      name: result.name,
-      parent_id: result
-        .parent_id
-        .map(|id| UUID4::new(id.to_string()).unwrap_or_default()),
-      slug: Slug::new(&result.slug).unwrap_or_default(),
-      created_at: result.created_at,
-      updated_at: result.updated_at,
-    })
+    match result {
+      Ok(result) => Ok(Some(Genre {
+        id: UUID4::new(result.id.to_string()).unwrap_or_default(),
+        name: result.name,
+        parent_id: result
+          .parent_id
+          .map(|id| UUID4::new(id.to_string()).unwrap_or_default()),
+        slug: Slug::new(&result.slug).unwrap_or_default(),
+        created_at: result.created_at,
+        updated_at: result.updated_at,
+      })),
+      Err(sqlx::Error::RowNotFound) => Ok(None),
+      Err(err) => Err(GenreRepositoryError::InternalServerError(err.to_string())),
+    }
   }
 }

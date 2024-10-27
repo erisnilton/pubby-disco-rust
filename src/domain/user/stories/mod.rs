@@ -1,4 +1,2 @@
-mod create_user;
-mod login;
-pub use create_user::*;
-pub use login::*;
+pub mod user_login;
+pub mod user_register;

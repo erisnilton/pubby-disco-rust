@@ -1,5 +1,11 @@
+use std::{
+  collections::HashMap,
+  sync::{Arc, RwLock},
+};
+
 use sqlx::{postgres::PgPoolOptions, Postgres};
 
+pub mod di;
 pub mod domain;
 pub mod infra;
 pub mod shared;
@@ -7,6 +13,7 @@ pub mod shared;
 #[derive(Clone)]
 pub struct AppState {
   pub db: sqlx::Pool<Postgres>,
+  pub in_memory: Arc<RwLock<HashMap<String, serde_json::Value>>>,
 }
 
 impl AppState {
@@ -37,6 +44,9 @@ impl AppState {
       }
     };
 
-    Self { db: pool }
+    Self {
+      db: pool,
+      in_memory: Arc::new(RwLock::new(HashMap::new())),
+    }
   }
 }

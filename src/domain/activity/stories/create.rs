@@ -24,7 +24,16 @@ pub async fn create_activity(
       let entity: CollaborativeEntity = match entity_id {
         crate::shared::vo::CollaborativeEntityId::Genre(genre_id) => {
           crate::shared::vo::CollaborativeEntity::Genre(
-            genre_repository.find_by_id(&genre_id).await.unwrap(),
+            match genre_repository.find_by_id(&genre_id).await {
+              Ok(Some(genre)) => genre,
+              Ok(None) => return Err(ActivityRepositoryError::EntityNotFound),
+              Err(e) => {
+                log::error!("Failed to find genre: {:?}", e);
+                return Err(ActivityRepositoryError::InternalServerError(
+                  "Failed to find genre".to_string(),
+                ));
+              }
+            },
           )
         }
         _ => unreachable!(),
@@ -45,15 +54,16 @@ pub mod tests {
   use crate::{
     domain::{
       activity::dto::{CreateActivityDto, CreateActivityEntityDto},
-      genre::{dto::CreateGenreDto, Genre},
+      genre::dto::CreateGenreDto,
       user::User,
     },
-    infra::sqlx::{SqlxActivityRepository, SqlxGenreRepository},
-    shared::vo::{CollaborativeEntity, UUID4},
     AppState,
   };
 
   use super::{create_activity, CreateActivityInput};
+
+  use crate::infra::in_memory::InMemoryActivityRepository as ActivityRepository;
+  use crate::infra::in_memory::InMemoryGenreRepository as GenreRepository;
 
   #[tokio::test]
   async fn test_criar_uma_activity() {
@@ -61,15 +71,16 @@ pub mod tests {
     dotenvy::dotenv().ok();
 
     let app_state = AppState::default().await;
-    let mut activity_repository = SqlxActivityRepository::new(app_state.db.clone());
-    let mut genre_repository = SqlxGenreRepository::new(app_state.db.clone());
+    let mut activity_repository = ActivityRepository::new(&app_state);
+    let mut genre_repository = GenreRepository::new(&app_state);
 
     create_activity(
       &mut activity_repository,
       &mut genre_repository,
       CreateActivityInput {
         user: User {
-          id: UUID4::new("e4442384-61ea-440d-be63-cb2642e58007").unwrap_or_default(),
+          id: crate::shared::vo::UUID4::new("e4442384-61ea-440d-be63-cb2642e58007")
+            .unwrap_or_default(),
           ..Default::default()
         },
         data: CreateActivityDto::Create(CreateActivityEntityDto::Genre(CreateGenreDto {

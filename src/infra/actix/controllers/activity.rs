@@ -40,10 +40,15 @@ async fn create_activity(
       "id": data.id,
       "status": Into::<String>::into(data.status)
     })),
+    Err(ActivityRepositoryError::EntityNotFound) => actix_web::HttpResponse::UnprocessableEntity()
+      .json(json!({
+        "name": "UnprocessableEntity",
+        "message": "Failed to find entity"
+      })),
     Err(ActivityRepositoryError::InternalServerError(err)) => {
       actix_web::HttpResponse::InternalServerError().json(json!({
-        "message": err,
-        "name": "Internal Server Error"
+        "name": "Internal Server Error",
+        "message": err
       }))
     }
   }
