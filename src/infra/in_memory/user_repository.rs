@@ -68,4 +68,26 @@ impl crate::domain::user::UserRepository for InMemoryUserRepository {
 
     Ok(user)
   }
+
+  async fn find_by_id(
+    &mut self,
+    id: UUID4,
+  ) -> Result<Option<User>, crate::domain::user::UserRepositoryError> {
+    let data = self.data.read().unwrap();
+    let user = data.get(&id.to_string()).map(|value| User {
+      id: UUID4::new(value["id"].as_str().unwrap()).unwrap_or_default(),
+      created_at: chrono::DateTime::parse_from_rfc3339(value["created_at"].as_str().unwrap())
+        .unwrap_or_default()
+        .naive_utc(),
+      updated_at: chrono::DateTime::parse_from_rfc3339(value["updated_at"].as_str().unwrap())
+        .unwrap_or_default()
+        .naive_utc(),
+      username: value["username"].as_str().unwrap().to_string(),
+      display_name: value["display_name"].as_str().unwrap().to_string(),
+      email: value["email"].as_str().unwrap().to_string(),
+      is_curator: value["is_curator"].as_bool().unwrap(),
+      password: value["password"].as_str().unwrap().to_string(),
+    });
+    Ok(user)
+  }
 }

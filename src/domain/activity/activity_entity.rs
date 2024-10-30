@@ -15,9 +15,9 @@ pub enum ActivityStatus {
   Rejected,
 }
 
-impl Into<String> for ActivityStatus {
-  fn into(self) -> String {
-    match self {
+impl From<ActivityStatus> for String {
+  fn from(val: ActivityStatus) -> Self {
+    match val {
       ActivityStatus::Draft => String::from("Draft"),
       ActivityStatus::Approved => String::from("Approved"),
       ActivityStatus::Pending => String::from("Pending"),

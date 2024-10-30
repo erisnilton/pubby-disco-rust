@@ -1,5 +1,6 @@
-POST http://localhost:8080/activity
+POST http://localhost:8080/activities
 Content-Type: application/json
+Cookie: session_id=YVt%2F+1eq9M2Z2FeGL4L+JIUJRfBv0F59ADC5m%2FicHCkGXkrWMJp4NGPWxhjuglS%2FbgdEJOmZd9SAK4gcqMGtcJRzwcX0%2FHFfeRoquh+2koEAUeE6INRiYWrFTuQvCKB57JZhhvbQIvcLZzh+PDdMV0JHR7KUYvSk7Mk%2FGu%2FtUKiDltUtUsYFJzQ6KqWC;
 
 {
   "Create": {

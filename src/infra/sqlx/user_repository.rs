@@ -88,12 +88,28 @@ impl UserRepository for SqlxUserRepository {
     &mut self,
     username: impl Into<String>,
   ) -> Result<Option<crate::domain::user::User>, crate::domain::user::UserRepositoryError> {
-    let username = username.into();
+    let username: String = username.into();
 
     let user_record = sqlx::query_as!(
       UserRecord,
-      r#"SELECT * FROM "users" WHERE "username" = $1"#,
+      r#"SELECT * FROM "users" WHERE "username" = $1 LIMIT 1"#,
       username
+    )
+    .fetch_optional(&self.pool)
+    .await
+    .map_err(|e| UserRepositoryError::InternalServerError(e.to_string()))?;
+
+    Ok(user_record.map(|record| record.into()))
+  }
+
+  async fn find_by_id(
+    &mut self,
+    id: crate::shared::vo::UUID4,
+  ) -> Result<Option<User>, UserRepositoryError> {
+    let user_record = sqlx::query_as!(
+      UserRecord,
+      r#"SELECT * FROM "users" WHERE "id" = $1 LIMIT 1"#,
+      Into::<Uuid>::into(id)
     )
     .fetch_optional(&self.pool)
     .await
@@ -105,27 +121,33 @@ impl UserRepository for SqlxUserRepository {
 
 #[cfg(test)]
 mod tests {
+  use sqlx::Executor;
+
   use super::*;
-  use crate::AppState;
+  use crate::{shared::vo::UUID4, AppState};
 
   const TEST_EMAIL: &str = "user@test.com";
-
-  async fn drop_old_data() {
-    let db = AppState::default().await.db;
-
-    // Delete old data
-    sqlx::query!(r#"DELETE FROM "users" WHERE "email" = $1"#r, TEST_EMAIL)
-      .execute(&db)
-      .await
-      .unwrap();
-  }
 
   #[tokio::test]
   async fn should_create_user() {
     // Load .env file
     dotenvy::dotenv().ok();
 
-    drop_old_data().await;
+    async fn delete_old_data() {
+      let app_state = AppState::default().await;
+
+      app_state
+        .db
+        .execute(
+          r#"
+          DELETE FROM "users" WHERE "id" = '6f76b734-61f7-4613-bdfc-de5064d9fdb1';
+          "#,
+        )
+        .await
+        .ok();
+    }
+
+    delete_old_data().await;
 
     let state = AppState::default().await;
 
@@ -138,6 +160,7 @@ mod tests {
 
     let user = user_repository
       .create(User {
+        id: UUID4::new("6f76b734-61f7-4613-bdfc-de5064d9fdb1").unwrap_or_default(),
         username: username.clone(),
         password: password.clone(),
         email: email.clone(),
@@ -147,11 +170,11 @@ mod tests {
       .await
       .unwrap();
 
+    delete_old_data().await;
+
     assert_eq!(user.username, username);
     assert_eq!(user.email, email);
     assert_eq!(user.display_name, display_name);
-
-    drop_old_data().await;
   }
 
   #[tokio::test]
@@ -159,39 +182,54 @@ mod tests {
     // Load .env file
     dotenvy::dotenv().ok();
 
+    async fn delete_old_data() {
+      let app_state = AppState::default().await;
+
+      app_state
+        .db
+        .execute(
+          r#"
+          DELETE FROM "users" WHERE "username" = 'should_find_user_by_username';
+          "#,
+        )
+        .await
+        .ok();
+    }
+
     let state = AppState::default().await;
 
-    drop_old_data().await;
+    delete_old_data().await;
 
     let mut user_repository = SqlxUserRepository::new(&state);
 
-    let username = String::from("test");
-    let password = String::from("test");
-    let email = String::from(TEST_EMAIL);
     let display_name = String::from("Test User");
 
-    user_repository
-      .create(User {
-        username: username.clone(),
-        password: password.clone(),
-        email: email.clone(),
-        display_name: display_name.clone(),
-        ..Default::default()
-      })
+    let user = User {
+      id: UUID4::new("4661a178-a2ec-4183-ae5f-aa4572860202").unwrap_or_default(),
+      username: String::from("should_find_user_by_username"),
+      password: String::from("test"),
+      email: String::from(TEST_EMAIL),
+      display_name: display_name.clone(),
+      ..Default::default()
+    };
+
+    user_repository.create(user.clone()).await.unwrap();
+
+    let result = user_repository
+      .find_by_username(user.username.clone())
       .await
       .unwrap();
 
-    let user = user_repository
-      .find_by_username(username.clone())
-      .await
-      .unwrap()
-      .unwrap();
+    delete_old_data().await;
 
-    assert_eq!(user.username, username);
-    assert_eq!(user.email, email);
-    assert_eq!(user.display_name, display_name);
+    assert!(result.is_some(), "User not found");
 
-    drop_old_data().await;
+    let result = result.unwrap();
+
+    assert_eq!(user.id, result.id);
+    assert_eq!(user.username, result.username);
+    assert_eq!(user.email, result.email);
+    assert_eq!(user.display_name, result.display_name);
   }
 
   #[tokio::test]
@@ -199,21 +237,35 @@ mod tests {
     // Load .env file
     dotenvy::dotenv().ok();
 
+    async fn delete_old_data() {
+      let app_state = AppState::default().await;
+
+      app_state
+        .db
+        .execute(
+          r#"
+          DELETE FROM "users" WHERE "username" = 'test_should_not_find_user_by_username';
+          "#,
+        )
+        .await
+        .ok();
+    }
+
     let state: AppState = AppState::default().await;
 
-    drop_old_data().await;
+    delete_old_data().await;
 
     let mut user_repository = SqlxUserRepository::new(&state);
 
-    let username = String::from("test");
+    let username = String::from("test_should_not_find_user_by_username");
 
     let user = user_repository
       .find_by_username(username.clone())
       .await
       .unwrap();
 
-    assert!(user.is_none());
+    delete_old_data().await;
 
-    drop_old_data().await;
+    assert!(user.is_none());
   }
 }

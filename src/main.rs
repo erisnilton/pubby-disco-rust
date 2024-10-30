@@ -1,8 +1,16 @@
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
+use actix_files::Files;
 use actix_session::SessionMiddleware;
-use actix_web::{cookie::Key, error::JsonPayloadError, web, App, HttpServer};
+use actix_web::{
+  cookie::Key,
+  error::JsonPayloadError,
+  middleware::NormalizePath,
+  web::{self},
+  App, HttpServer,
+};
+
 use base64::Engine;
 use rust::{infra, AppState};
 use serde_json::json;
@@ -44,6 +52,7 @@ async fn main() -> std::io::Result<()> {
 
   match HttpServer::new(move || {
     App::new()
+      .wrap(NormalizePath::trim())
       .wrap(Logger::default())
       .wrap(
         SessionMiddleware::builder(
@@ -98,8 +107,15 @@ async fn main() -> std::io::Result<()> {
             })),
           }),
       )
-      .service(infra::actix::controllers::user())
-      .service(infra::actix::controllers::activity())
+      .service(
+        Files::new("/docs", "./swagger-ui")
+          .prefer_utf8(true)
+          .index_file("index.html"),
+      )
+      .configure(|config| {
+        infra::actix::user::controller::configure(config);
+        infra::actix::activity::controller::configure(config);
+      })
   })
   .bind((api_host.as_str(), api_port))
   {

@@ -1,5 +1,7 @@
 use std::future::Future;
 
+use crate::shared::vo::UUID4;
+
 use super::User;
 
 #[derive(Debug)]
@@ -14,5 +16,10 @@ pub trait UserRepository {
   fn find_by_username(
     &mut self,
     username: impl Into<String>,
+  ) -> impl Future<Output = Result<Option<User>, UserRepositoryError>>;
+
+  fn find_by_id(
+    &mut self,
+    id: UUID4,
   ) -> impl Future<Output = Result<Option<User>, UserRepositoryError>>;
 }

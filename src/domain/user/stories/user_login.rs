@@ -15,7 +15,7 @@ impl From<UserRepositoryError> for LoginError {
   }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, validator::Validate)]
+#[derive(Debug, Clone, validator::Validate)]
 pub struct Input {
   #[validate(length(min = 1))]
   pub username: String,

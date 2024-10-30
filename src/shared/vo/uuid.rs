@@ -35,3 +35,9 @@ impl Default for UUID4 {
     Self::generate()
   }
 }
+
+impl From<UUID4> for uuid::Uuid {
+  fn from(value: UUID4) -> Self {
+    uuid::Uuid::parse_str(&value.0).unwrap()
+  }
+}

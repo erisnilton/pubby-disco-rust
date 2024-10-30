@@ -1,3 +1,5 @@
+use chrono::Timelike;
+
 use crate::domain::user::User;
 
 #[derive(Debug, serde::Serialize)]
@@ -22,11 +24,7 @@ impl From<crate::domain::user::User> for PublicUserPresenter {
 impl From<crate::shared::paged::Paged<User>> for crate::shared::paged::Paged<PublicUserPresenter> {
   fn from(value: crate::shared::paged::Paged<User>) -> Self {
     Self {
-      items: value
-        .items
-        .into_iter()
-        .map(PublicUserPresenter::from)
-        .collect(),
+      items: value.items.into_iter().map(|item| item.into()).collect(),
       page: value.page,
       total_items: value.total_items,
       total_pages: value.total_pages,

@@ -110,10 +110,15 @@ impl ActivityRepository for SqlxActivityRepository {
 
 #[cfg(test)]
 pub mod tests {
+  use sqlx::Executor;
+
   use super::*;
   use crate::{
-    domain::{genre::Genre, user::User},
-    infra::sqlx::activity_repository::SqlxActivityRepository,
+    domain::{
+      genre::Genre,
+      user::{User, UserRepository},
+    },
+    infra::sqlx::{activity_repository::SqlxActivityRepository, SqlxUserRepository},
     shared::vo::{CollaborativeEntity, UUID4},
     AppState,
   };
@@ -123,18 +128,45 @@ pub mod tests {
     // Load .env file
     dotenvy::dotenv().ok();
 
+    let app_state = AppState::default().await;
+    let user_id = UUID4::new("e4442384-61ea-440d-be63-cb2642e58007").unwrap_or_default();
+    let activity_id = UUID4::new("05188e82-6566-45db-8914-154c587cb951").unwrap_or_default();
+
+    async fn delete_old_data() {
+      let app_state = AppState::default().await;
+
+      app_state
+        .db
+        .execute(
+          r#"
+          DELETE FROM "activity" WHERE "user_id" = 'e4442384-61ea-440d-be63-cb2642e58007';
+          DELETE FROM "users" WHERE "id" = 'e4442384-61ea-440d-be63-cb2642e58007';
+          "#,
+        )
+        .await
+        .ok();
+    }
+
+    let user = User {
+      id: user_id.clone(),
+      ..Default::default()
+    };
+
+    delete_old_data().await;
+
+    let mut user_repository = SqlxUserRepository::new(&app_state);
+    user_repository.create(user.clone()).await.ok();
+
     let activity = Activity {
-      user: User {
-        id: UUID4::new("e4442384-61ea-440d-be63-cb2642e58007").unwrap_or_default(),
-        ..Default::default()
-      },
+      id: activity_id.clone(),
+      user: user.clone(),
+
       change: ActivityChange::Create(CollaborativeEntity::Genre(Genre {
         name: String::from("Forró"),
         ..Default::default()
       })),
       ..Default::default()
     };
-    let app_state = AppState::default().await;
 
     let mut activity_repository = SqlxActivityRepository::new(app_state.db.clone());
 
@@ -142,6 +174,8 @@ pub mod tests {
       .create(&activity)
       .await
       .expect("falha ao cadastrar atividade");
+
+    delete_old_data().await;
 
     assert!(
       activity.id.0 == result.id.0,

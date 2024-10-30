@@ -1,6 +1,6 @@
 use crate::shared::vo::UUID4;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct User {
   pub id: UUID4,
   pub username: String,

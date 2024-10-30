@@ -24,7 +24,7 @@ impl From<ValidationErrors> for CreateUserStoryError {
   }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, validator::Validate)]
+#[derive(Debug, Clone, validator::Validate)]
 pub struct Input {
   #[validate(length(min = 1, max = 80))]
   pub username: String,
