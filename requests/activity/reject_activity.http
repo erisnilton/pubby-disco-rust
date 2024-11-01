@@ -1,16 +1,8 @@
-POST http://localhost:8080/activities
+PATCH  http://localhost:8080/activities/reject
 Content-Type: application/json
 Cookie: session_id=GEFBWco9Po6+gmMAkDQ3oeSVZ1LO+rQ1qXiWy%2FrVQLLGH4%2FAPtKQ8BVuDg3X9E0QXzPw9+vKNvyXPQQ6O7gLpSMnRYJi7NjUIs6kvVOfRDSpF6isez0T1+q9sSL5UteQP0H2nwivCzmLWQrAWrMe1w+9BQvWoXJ+rOfrB4SdPDpot7B+xoWwhy35RO4E;
 
 {
-  "Update": {
-    "entity_id": {
-      "Genre": "a296bf7c-7b81-4bf3-9579-acf5b804c4e3"
-    },
-    "changes": {
-      "Genre": {
-          "slug": "samba"
-      }
-    }
-  }
+  "activity_id": "8276bd5b-8a9e-4853-9bf7-02d889e76024",
+  "reason": "I don't like this activity"
 }

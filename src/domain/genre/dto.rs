@@ -34,3 +34,13 @@ impl IntoRecord for UpdateGenreDto {
     })
   }
 }
+
+impl From<serde_json::Value> for UpdateGenreDto {
+  fn from(value: serde_json::Value) -> Self {
+    Self {
+      name: value["name"].as_str().map(|s| s.to_string()),
+      slug: value["slug"].as_str().map(|s| s.to_string()),
+      parent_id: value["parent_id"].as_str().map(|s| s.to_string()),
+    }
+  }
+}

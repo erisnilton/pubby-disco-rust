@@ -7,12 +7,12 @@ use crate::{
 
 use super::dto::CreateActivityEntityDto;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ActivityStatus {
   Draft,
   Pending,
   Approved,
-  Rejected,
+  Rejected(String),
 }
 
 impl From<ActivityStatus> for String {
@@ -21,7 +21,7 @@ impl From<ActivityStatus> for String {
       ActivityStatus::Draft => String::from("Draft"),
       ActivityStatus::Approved => String::from("Approved"),
       ActivityStatus::Pending => String::from("Pending"),
-      ActivityStatus::Rejected => String::from("Rejected"),
+      ActivityStatus::Rejected(reason) => format!("Rejected: {}", reason),
     }
   }
 }
@@ -45,6 +45,11 @@ impl ActivityChange {
       ActivityChange::Delete(..) => String::from("Delete"),
     }
   }
+}
+
+#[derive(Debug, Clone)]
+pub enum ActivityError {
+  ActivityIsNotPending,
 }
 
 #[derive(Debug, Clone)]
@@ -90,6 +95,22 @@ impl Activity {
       },
       ..Default::default()
     }
+  }
+
+  pub fn set_curator_status(
+    mut self,
+    status: ActivityStatus,
+    curator: &User,
+  ) -> Result<Activity, ActivityError> {
+    if self.status != ActivityStatus::Pending {
+      return Err(ActivityError::ActivityIsNotPending);
+    }
+
+    self.status = status;
+    self.curator = Some(curator.clone());
+    self.revision_date = Some(chrono::Utc::now());
+
+    Ok(self)
   }
 }
 

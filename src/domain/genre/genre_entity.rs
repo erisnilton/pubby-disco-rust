@@ -57,6 +57,29 @@ impl IntoRecord for Genre {
   }
 }
 
+impl From<serde_json::Value> for Genre {
+  fn from(value: serde_json::Value) -> Self {
+    Genre {
+      id: UUID4::new(value["id"].as_str().unwrap_or_default()).unwrap_or_default(),
+      name: value["name"].as_str().unwrap_or_default().to_string(),
+      slug: Slug::new(value["slug"].as_str().unwrap_or_default()).unwrap_or_default(),
+      parent_id: value["parent_id"]
+        .as_str()
+        .map(|id| UUID4::new(id).unwrap_or_default()),
+      created_at: value["created_at"]
+        .as_str()
+        .unwrap_or_default()
+        .parse()
+        .unwrap(),
+      updated_at: value["updated_at"]
+        .as_str()
+        .unwrap_or_default()
+        .parse()
+        .unwrap(),
+    }
+  }
+}
+
 impl GetChanges<UpdateGenreDto> for Genre {
   fn get_changes(&self, changes: UpdateGenreDto) -> (UpdateGenreDto, UpdateGenreDto) {
     let mut old_value = UpdateGenreDto::default();

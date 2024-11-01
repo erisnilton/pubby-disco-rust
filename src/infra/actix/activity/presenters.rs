@@ -1,4 +1,4 @@
-use chrono::{SubsecRound, Utc};
+use chrono::Utc;
 
 use crate::{
   domain,
@@ -12,7 +12,7 @@ use crate::{
 pub enum ActivityStatusDTO {
   Pending,
   Approved,
-  Rejected,
+  Rejected(String),
   Draft,
 }
 
@@ -87,7 +87,9 @@ impl From<crate::domain::activity::Activity> for PublicActivityPresenter {
       status: match value.status {
         crate::domain::activity::ActivityStatus::Pending => ActivityStatusDTO::Pending,
         crate::domain::activity::ActivityStatus::Approved => ActivityStatusDTO::Approved,
-        crate::domain::activity::ActivityStatus::Rejected => ActivityStatusDTO::Rejected,
+        crate::domain::activity::ActivityStatus::Rejected(reason) => {
+          ActivityStatusDTO::Rejected(reason)
+        }
         crate::domain::activity::ActivityStatus::Draft => ActivityStatusDTO::Draft,
       },
       change: value.change.into(),
