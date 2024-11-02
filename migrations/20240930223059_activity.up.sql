@@ -19,6 +19,7 @@ CREATE TABLE "activity" (
     "entity_id" UUID,
     "change_type" activity_change_type NOT NULL,
     "revision_date" TIMESTAMP,
+    "reason" VARCHAR(255),
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

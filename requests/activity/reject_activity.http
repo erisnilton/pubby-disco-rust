@@ -1,8 +1,8 @@
 PATCH  http://localhost:8080/activities/reject
 Content-Type: application/json
-Cookie: session_id=GEFBWco9Po6+gmMAkDQ3oeSVZ1LO+rQ1qXiWy%2FrVQLLGH4%2FAPtKQ8BVuDg3X9E0QXzPw9+vKNvyXPQQ6O7gLpSMnRYJi7NjUIs6kvVOfRDSpF6isez0T1+q9sSL5UteQP0H2nwivCzmLWQrAWrMe1w+9BQvWoXJ+rOfrB4SdPDpot7B+xoWwhy35RO4E;
+Cookie: session_id=S%2F8OiycBnr4F4VZGo5V7HA5Rkd29cwEkRE8Boj3nPm7IhYv6h7F9q2iZPt865lLXsQBYceTozG+bdNI1%2FGZ%2FqoCQ3TBGHagsxFM3Dl8IyJ%2FPwK+WRHyWbTXjLF62mafACvfv100+nP5q06WjbzpqCVqUS9H5k4S5OQkIwRTr0sBzEG1xC08GNMvd0+cY;
 
 {
-  "activity_id": "8276bd5b-8a9e-4853-9bf7-02d889e76024",
+  "activity_id": "06a79f94-8849-4b25-ac57-315e5b0774c8",
   "reason": "I don't like this activity"
 }

@@ -26,6 +26,7 @@ struct ActivityRecord {
   entity_name: String,
   entity_id: Option<Uuid>,
   change_type: String,
+  reason: Option<String>,
   revision_date: Option<chrono::NaiveDateTime>,
   created_at: Option<chrono::NaiveDateTime>,
   updated_at: Option<chrono::NaiveDateTime>,
@@ -70,6 +71,10 @@ impl Into<ActivityRecord> for &Activity {
       }
       .name(),
       revision_date: self.revision_date.map(|date| date.naive_utc()),
+      reason: match &self.status {
+        ActivityStatus::Rejected(reason) => Some(reason.clone()),
+        _ => None,
+      },
     }
   }
 }
@@ -85,7 +90,7 @@ impl From<ActivityRecord> for Activity {
         "Draft" => ActivityStatus::Draft,
         "Approved" => ActivityStatus::Approved,
         "Pending" => ActivityStatus::Pending,
-        "Rejected" => ActivityStatus::Rejected(String::new()),
+        "Rejected" => ActivityStatus::Rejected(value.reason.unwrap_or_default()),
         _ => ActivityStatus::Draft,
       },
       change: match value.change_type.as_str() {
@@ -188,6 +193,7 @@ impl ActivityRepository for SqlxActivityRepository {
         "entity_name",
         "entity_id",
         "revision_date",
+        "reason",
         "created_at",
         "updated_at"
         FROM "activity"
@@ -212,15 +218,20 @@ impl ActivityRepository for SqlxActivityRepository {
             "curator_id" = $3,
             "changes" = $4,
             "revision_date" = $5,
-            "updated_at" = $6
+            "updated_at" = $6,
+            "reason" = $7
 
           WHERE "id" = $1"#,
       row.id,
-      Into::<String>::into(row.status) as _,
+      Into::<String>::into(row.status.clone()) as _,
       row.curator_id,
       row.changes,
       row.revision_date,
-      row.updated_at
+      row.updated_at,
+      match &activity.status {
+        ActivityStatus::Rejected(reason) => Some(reason),
+        _ => None,
+      }
     )
     .execute(&self.db)
     .await
