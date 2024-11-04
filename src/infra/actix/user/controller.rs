@@ -57,7 +57,7 @@ pub async fn user_login(
 
   match result {
     Ok(user) => {
-      session.insert("disco_session", user.id.to_string()).ok();
+      session.insert("user_id", user.id.to_string()).ok();
       actix_web::HttpResponse::Ok().json(Into::<super::presenters::PublicUserPresenter>::into(user))
     }
     Err(user_login::LoginError::InvalidCredentials) => actix_web::HttpResponse::Unauthorized()
@@ -77,7 +77,7 @@ pub async fn user_login(
 }
 
 async fn get_me(session: Session) -> impl Responder {
-  match session.get::<String>("disco_session") {
+  match session.get::<String>("user_id") {
     Ok(Some(user_id)) => actix_web::HttpResponse::Ok().json(json!({
       "id": user_id,
     })),

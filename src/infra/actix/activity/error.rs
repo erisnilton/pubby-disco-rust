@@ -1,6 +1,11 @@
 use crate::{
-  domain::activity::{
-    stories::reject::RejectActivityError, ActivityError, ActivityRepositoryError,
+  domain::{
+    activity::{
+      error::EntityUpdateError,
+      stories::{approve::ApproveActivityError, reject::RejectActivityError},
+      ActivityError, ActivityRepositoryError,
+    },
+    genre::stories::apply_changes::ApplyChangesError,
   },
   infra::actix::errors::ErrorResponse,
 };
@@ -39,6 +44,44 @@ impl From<RejectActivityError> for ErrorResponse {
         ErrorResponse::Forbidden(String::from("User is not a curator"))
       }
       RejectActivityError::ActivityError(error) => error.into(),
+    }
+  }
+}
+
+impl From<ApplyChangesError> for ErrorResponse {
+  fn from(value: ApplyChangesError) -> Self {
+    match value {
+      ApplyChangesError::EntityIsNotGenre => {
+        ErrorResponse::BadRequest(String::from("Entity is not a genre"), None)
+      }
+      ApplyChangesError::RepositoryError(error) => error.into(),
+    }
+  }
+}
+
+impl From<EntityUpdateError> for ErrorResponse {
+  fn from(value: EntityUpdateError) -> Self {
+    match value {
+      EntityUpdateError::Genre(error) => error.into(),
+    }
+  }
+}
+
+impl From<ApproveActivityError> for ErrorResponse {
+  fn from(value: ApproveActivityError) -> Self {
+    match value {
+      ApproveActivityError::ActivityNotFound => {
+        ErrorResponse::NotFound(String::from("Activity not found"))
+      }
+      ApproveActivityError::RepositoryError(error) => error.into(),
+      ApproveActivityError::UserIsNotACurator => {
+        ErrorResponse::Forbidden(String::from("User is not a curator"))
+      }
+      ApproveActivityError::ActivityError(error) => error.into(),
+      ApproveActivityError::InvalidEntity => {
+        ErrorResponse::BadRequest(String::from("Invalid entity"), None)
+      }
+      ApproveActivityError::EntityUpdateError(error) => error.into(),
     }
   }
 }

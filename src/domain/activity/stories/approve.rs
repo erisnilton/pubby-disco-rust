@@ -1,72 +1,82 @@
 use crate::{
   domain::{
-    activity::{Activity, ActivityRepository},
+    self,
+    activity::{error::EntityUpdateError, Activity, ActivityStatus},
     user::User,
   },
   shared::vo::UUID4,
 };
 
-#[derive(Debug, Clone, validator::Validate)]
-pub struct Input {
-  pub activity_id: UUID4,
-
-  #[validate(length(min = 10, max = 255))]
-  pub reason: String,
-  pub user: User,
-}
-
-#[derive(Debug)]
-pub enum RejectActivityError {
+#[derive(Debug, Clone)]
+pub enum ApproveActivityError {
   UserIsNotACurator,
   RepositoryError(crate::domain::activity::ActivityRepositoryError),
   ActivityNotFound,
   ActivityError(crate::domain::activity::ActivityError),
+  EntityUpdateError(crate::domain::activity::error::EntityUpdateError),
+  InvalidEntity,
+}
+
+#[derive(Debug, Clone)]
+pub struct Input {
+  pub activity_id: UUID4,
+  pub actor: User,
 }
 
 pub async fn execute(
-  activity_repository: &mut impl ActivityRepository,
+  activity_repository: &mut impl crate::domain::activity::ActivityRepository,
+  repository_genre: &mut impl crate::domain::genre::GenreRepository,
   input: Input,
-) -> Result<Activity, RejectActivityError> {
-  if !input.user.is_curator {
-    return Err(RejectActivityError::UserIsNotACurator);
+) -> Result<Activity, ApproveActivityError> {
+  if !input.actor.is_curator {
+    return Err(ApproveActivityError::UserIsNotACurator);
   }
+
   let activity = activity_repository
     .find_by_id(&input.activity_id)
     .await
-    .map_err(RejectActivityError::RepositoryError)?;
+    .map_err(ApproveActivityError::RepositoryError)?;
 
-  if let Some(activity) = activity {
-    let activity = activity
-      .set_curator_status(
-        crate::domain::activity::ActivityStatus::Rejected(input.reason),
-        &input.user,
-      )
-      .map_err(RejectActivityError::ActivityError)?;
-    activity_repository
-      .update(&activity)
-      .await
-      .map_err(RejectActivityError::RepositoryError)?;
+  if let Some(mut activity) = activity {
+    activity = activity
+      .set_curator_status(ActivityStatus::Approved, &input.actor)
+      .map_err(ApproveActivityError::ActivityError)?;
+
+    match activity.change.entity_name().as_str() {
+      "Genre" => {
+        domain::genre::stories::apply_changes::execute(repository_genre, activity.change.clone())
+          .await
+          .map_err(|err| ApproveActivityError::EntityUpdateError(EntityUpdateError::Genre(err)))?;
+      }
+      _ => return Err(ApproveActivityError::InvalidEntity),
+    }
+
     return Ok(activity);
   }
-
-  Err(RejectActivityError::ActivityNotFound)
+  Err(ApproveActivityError::ActivityNotFound)
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
   use crate::{
-    domain::{activity::ActivityStatus, user::UserRepository},
+    domain::{
+      activity::{ActivityRepository, ActivityStatus},
+      user::UserRepository,
+    },
     infra::in_memory::{InMemoryActivityRepository, InMemoryUserRepository},
   };
 
   #[tokio::test]
-  async fn test_reject_activity() {
+  async fn test_approve_activity() {
     // Load .env file
     dotenvy::dotenv().ok();
     let app_state = crate::AppState::default().await;
+
     let mut activity_repository = InMemoryActivityRepository::new(&app_state);
     let mut user_repository = InMemoryUserRepository::new(&app_state);
+    let mut genre_repository = crate::infra::in_memory::InMemoryGenreRepository::new(&app_state);
+
     let user = User {
       username: "user".to_string(),
       password: "password".to_string(),
@@ -100,19 +110,13 @@ mod tests {
 
     let input = Input {
       activity_id: activity.id.clone(),
-      reason: "reason".to_string(),
-      user: curator.clone(),
+      actor: curator.clone(),
     };
 
-    let result = execute(&mut activity_repository, input).await.unwrap();
+    let result = execute(&mut activity_repository, &mut genre_repository, input)
+      .await
+      .unwrap();
     assert_eq!(result.id, activity.id);
-    assert_eq!(
-      result.status,
-      crate::domain::activity::ActivityStatus::Rejected("reason".to_string())
-    );
-    assert!(
-      result.revision_date.is_some(),
-      "revision_date should be Some"
-    );
+    assert_eq!(result.status, ActivityStatus::Approved);
   }
 }

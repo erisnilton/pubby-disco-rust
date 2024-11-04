@@ -4,3 +4,4 @@ pub mod stories;
 pub use activity_entity::*;
 pub use repository::*;
 pub mod dto;
+pub mod error;

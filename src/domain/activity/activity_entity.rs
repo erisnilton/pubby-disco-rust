@@ -45,6 +45,14 @@ impl ActivityChange {
       ActivityChange::Delete(..) => String::from("Delete"),
     }
   }
+
+  pub fn entity_name(&self) -> String {
+    match self {
+      ActivityChange::Create(entity) => entity.name(),
+      ActivityChange::Update { entity, .. } => entity.name(),
+      ActivityChange::Delete(entity) => entity.name(),
+    }
+  }
 }
 
 #[derive(Debug, Clone)]
@@ -126,5 +134,133 @@ impl Default for Activity {
       created_at: chrono::Utc::now(),
       updated_at: chrono::Utc::now(),
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::domain::activity::{ActivityRepository, ActivityStatus};
+
+  #[tokio::test]
+  async fn test_fail_when_activity_status_is_not_pending() {
+    let user = User {
+      username: "user".to_string(),
+      password: "password".to_string(),
+      email: "user@teste.com".to_string(),
+      ..Default::default()
+    };
+    let curator = User {
+      username: "user_curator".to_string(),
+      password: "password".to_string(),
+      is_curator: true,
+      email: "currator@teste.com".to_string(),
+      ..Default::default()
+    };
+    for status in [
+      ActivityStatus::Approved,
+      ActivityStatus::Draft,
+      ActivityStatus::Rejected(String::from("teste")),
+    ] {
+      let activity = Activity {
+        user: user.clone(),
+        curator: None,
+        status: status.clone(),
+
+        change: crate::domain::activity::ActivityChange::Create(
+          crate::shared::vo::CollaborativeEntity::Genre(crate::domain::genre::Genre {
+            name: "genre".to_string(),
+            slug: crate::shared::vo::Slug::generate("genre"),
+            ..Default::default()
+          }),
+        ),
+        ..Default::default()
+      };
+      let result = activity.set_curator_status(status.clone(), &curator);
+      assert!(
+        result.is_err(),
+        "activity status is {:?} and should return error",
+        status
+      );
+    }
+  }
+
+  #[tokio::test]
+  // Deve aprovar a atividade se estiver pendente
+  async fn test_approve_activity() {
+    let user = User {
+      username: "user".to_string(),
+      password: "password".to_string(),
+      email: "user@teste.com".to_string(),
+      ..Default::default()
+    };
+
+    let curator = User {
+      username: "user_curator".to_string(),
+      password: "password".to_string(),
+      is_curator: true,
+      email: "currator@teste.com".to_string(),
+      ..Default::default()
+    };
+
+    let activity = Activity {
+      user: user.clone(),
+      curator: None,
+      status: ActivityStatus::Pending,
+
+      change: crate::domain::activity::ActivityChange::Create(
+        crate::shared::vo::CollaborativeEntity::Genre(crate::domain::genre::Genre {
+          name: "genre".to_string(),
+          slug: crate::shared::vo::Slug::generate("genre"),
+          ..Default::default()
+        }),
+      ),
+      ..Default::default()
+    };
+    let result = activity.set_curator_status(ActivityStatus::Approved, &curator);
+    assert!(
+      result.is_ok(),
+      "activity status is Pending and should return Ok"
+    );
+  }
+
+  #[tokio::test]
+  // Deve rejeitar a atividade se estiver pendente
+  async fn test_reject_activity() {
+    let user = User {
+      username: "user".to_string(),
+      password: "password".to_string(),
+      email: "user@teste.com".to_string(),
+      ..Default::default()
+    };
+
+    let curator = User {
+      username: "user_curator".to_string(),
+      password: "password".to_string(),
+      is_curator: true,
+      email: "currator@teste.com".to_string(),
+      ..Default::default()
+    };
+
+    let activity = Activity {
+      user: user.clone(),
+      curator: None,
+      status: ActivityStatus::Pending,
+
+      change: crate::domain::activity::ActivityChange::Create(
+        crate::shared::vo::CollaborativeEntity::Genre(crate::domain::genre::Genre {
+          name: "genre".to_string(),
+          slug: crate::shared::vo::Slug::generate("genre"),
+          ..Default::default()
+        }),
+      ),
+      ..Default::default()
+    };
+    let result =
+      activity.set_curator_status(ActivityStatus::Rejected(String::from("error")), &curator);
+    assert!(
+      result.is_ok(),
+      "activity status is Pending and should return Ok"
+    );
   }
 }

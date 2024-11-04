@@ -124,7 +124,7 @@ impl From<ActivityRecord> for Activity {
           }
           value => panic!("Unexpected entity name: {}", value),
         }),
-        v => panic!("Unexpected change type: {}", value.change_type),
+        v => panic!("Unexpected change type: {}", v),
       },
       created_at: value
         .created_at

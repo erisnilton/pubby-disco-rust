@@ -6,7 +6,7 @@ use crate::shared::vo::{GetChanges, IntoRecord, Slug, UUID4};
 
 use super::dto::UpdateGenreDto;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Genre {
   pub id: UUID4,
   pub slug: Slug,
@@ -28,6 +28,23 @@ impl Genre {
       created_at: input.created_at,
       updated_at: input.updated_at,
     })
+  }
+
+  pub fn apply_changes(&mut self, old_value: &UpdateGenreDto, new_value: &UpdateGenreDto) {
+    if old_value.name != new_value.name {
+      self.name = new_value.name.clone().unwrap_or_default();
+    }
+
+    if old_value.slug != new_value.slug {
+      self.slug =
+        Slug::new(new_value.slug.clone().unwrap_or_default().as_str()).unwrap_or_default();
+    }
+    if old_value.parent_id != new_value.parent_id {
+      self.parent_id = new_value
+        .parent_id
+        .clone()
+        .map(|id| UUID4::new(id).unwrap_or_default());
+    }
   }
 }
 

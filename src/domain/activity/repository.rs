@@ -4,7 +4,7 @@ use crate::shared::vo::UUID4;
 
 use super::Activity;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ActivityRepositoryError {
   InternalServerError(String),
   EntityNotFound,

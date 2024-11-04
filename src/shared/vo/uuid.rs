@@ -2,6 +2,7 @@ use std::fmt::{self, Display, Formatter};
 
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum UUIDError {
   InvalidUUID,
 }

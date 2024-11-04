@@ -1,8 +1,7 @@
-PATCH  http://localhost:8080/activities/reject
+PATCH  http://localhost:8080/activities/approve
 Content-Type: application/json
 Cookie: session_id=mfepYy7cX4hbZkhy0PvRTJGw+cZY+UJOCofoYp6pAbZIaNZS5ARF7u1hTrhJPT6DZRbI0n4XgQaafCwDiIxWiZDyrXMp0Kz%2FnKci4gYSmQl6Gy%2FZ%2FCgtb6axeeZdsYNQkhsDffUbhrvntjfmtp3wSEYlH9%2FDue7kstUIZWEGKNwuI63D4bHcxnrOGHSz;
 
 {
-  "activity_id": "e1581c69-852e-45e2-8c6e-133646dbbe68",
-  "reason": "I don't like this activity"
+  "activity_id": "bc583741-736d-4c05-abe7-702114c2aebd"
 }
