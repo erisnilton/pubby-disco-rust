@@ -1,7 +1,7 @@
 use chrono::Utc;
 
 use crate::{
-  domain::{genre::Genre, user::User},
+  domain::{artists::Artist, genre::Genre, user::User},
   shared::vo::{CollaborativeEntity, Slug, UpdateCollaborativeEntityDto, UUID4},
 };
 
@@ -81,6 +81,12 @@ impl Activity {
         CreateActivityEntityDto::Genre(data) => CollaborativeEntity::Genre(Genre {
           name: data.name.clone(),
           slug: Slug::generate(&data.name),
+          ..Default::default()
+        }),
+        CreateActivityEntityDto::Artist(data) => CollaborativeEntity::Artist(Artist {
+          name: data.name.clone(),
+          slug: Slug::new(&data.slug).unwrap_or_default(),
+          country: data.country.clone(),
           ..Default::default()
         }),
       }),

@@ -1,5 +1,3 @@
-use chrono::Timelike;
-
 use crate::domain::user::User;
 
 #[derive(Debug, serde::Serialize)]

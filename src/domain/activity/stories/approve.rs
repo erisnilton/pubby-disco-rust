@@ -26,6 +26,7 @@ pub struct Input {
 pub async fn execute(
   activity_repository: &mut impl crate::domain::activity::ActivityRepository,
   repository_genre: &mut impl crate::domain::genre::GenreRepository,
+  artist_repository: &mut impl crate::domain::artists::repository::ArtistRepository,
   input: Input,
 ) -> Result<Activity, ApproveActivityError> {
   if !input.actor.is_curator {
@@ -47,6 +48,14 @@ pub async fn execute(
         domain::genre::stories::apply_changes::execute(repository_genre, activity.change.clone())
           .await
           .map_err(|err| ApproveActivityError::EntityUpdateError(EntityUpdateError::Genre(err)))?;
+      }
+      "Artist" => {
+        domain::artists::stories::apply_changes::execute(
+          artist_repository,
+          activity.change.clone(),
+        )
+        .await
+        .map_err(|err| ApproveActivityError::EntityUpdateError(EntityUpdateError::Artist(err)))?;
       }
       _ => return Err(ApproveActivityError::InvalidEntity),
     }
@@ -76,6 +85,7 @@ mod tests {
     let mut activity_repository = InMemoryActivityRepository::new(&app_state);
     let mut user_repository = InMemoryUserRepository::new(&app_state);
     let mut genre_repository = crate::infra::in_memory::InMemoryGenreRepository::new(&app_state);
+    let mut artist_repository = crate::infra::in_memory::InMemoryArtistRepository::new(&app_state);
 
     let user = User {
       username: "user".to_string(),
@@ -113,9 +123,14 @@ mod tests {
       actor: curator.clone(),
     };
 
-    let result = execute(&mut activity_repository, &mut genre_repository, input)
-      .await
-      .unwrap();
+    let result = execute(
+      &mut activity_repository,
+      &mut genre_repository,
+      &mut artist_repository,
+      input,
+    )
+    .await
+    .unwrap();
     assert_eq!(result.id, activity.id);
     assert_eq!(result.status, ActivityStatus::Approved);
   }

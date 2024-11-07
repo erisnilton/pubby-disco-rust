@@ -19,6 +19,7 @@ pub enum ActivityStatusDTO {
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub enum UpdateCollaborativeEntityDto {
   Genre(crate::infra::actix::genre::dto::UpdateGenreDto),
+  Artist(crate::infra::actix::artist::dto::UpdateArtistDto),
 }
 
 impl From<shared::vo::UpdateCollaborativeEntityDto> for UpdateCollaborativeEntityDto {
@@ -29,6 +30,9 @@ impl From<shared::vo::UpdateCollaborativeEntityDto> for UpdateCollaborativeEntit
       }
       shared::vo::UpdateCollaborativeEntityDto::Genre(genre) => {
         UpdateCollaborativeEntityDto::Genre(genre.into())
+      }
+      shared::vo::UpdateCollaborativeEntityDto::Artist(artist) => {
+        UpdateCollaborativeEntityDto::Artist(artist.into())
       }
     }
   }

@@ -1,8 +1,5 @@
 use crate::{
-  domain::{
-    activity::ActivityChange,
-    genre::{self, GenreRepositoryError},
-  },
+  domain::{activity::ActivityChange, genre::GenreRepositoryError},
   shared::vo::{CollaborativeEntity, UpdateCollaborativeEntityDto},
 };
 

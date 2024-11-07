@@ -63,6 +63,7 @@ impl From<EntityUpdateError> for ErrorResponse {
   fn from(value: EntityUpdateError) -> Self {
     match value {
       EntityUpdateError::Genre(error) => error.into(),
+      EntityUpdateError::Artist(error) => error.into(),
     }
   }
 }

@@ -1,11 +1,14 @@
-use crate::domain::artists::{
-  repository::{ArtistRepository, ArtistRepositoryError},
-  Artist,
+use crate::{
+  domain::artists::{
+    repository::{ArtistRepository, ArtistRepositoryError},
+    Artist,
+  },
+  shared::vo::Slug,
 };
 
 pub async fn find_artist_by_slug(
-  repository: &impl ArtistRepository,
-  slug: &str,
+  repository: &mut impl ArtistRepository,
+  slug: &Slug,
 ) -> Result<Artist, ArtistRepositoryError> {
   let artist = repository.find_by_slug(slug).await?;
 

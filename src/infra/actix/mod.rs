@@ -1,4 +1,5 @@
 pub mod activity;
+pub mod artist;
 pub mod collaborative_entity;
 pub mod errors;
 pub mod genre;

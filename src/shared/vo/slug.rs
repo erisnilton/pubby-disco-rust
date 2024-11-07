@@ -9,7 +9,7 @@ pub enum SlugError {
   InvalidSlug,
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Slug(pub String);
 
 impl Slug {

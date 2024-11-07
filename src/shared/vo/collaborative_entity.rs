@@ -2,7 +2,10 @@ use core::panic;
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::genre::{dto::UpdateGenreDto, Genre};
+use crate::domain::{
+  artists::{dto::UpdateArtistDto, Artist},
+  genre::{dto::UpdateGenreDto, Genre},
+};
 
 use super::UUID4;
 
@@ -10,24 +13,28 @@ use super::UUID4;
 pub enum CollaborativeEntity {
   Default,
   Genre(Genre),
+  Artist(Artist),
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum UpdateCollaborativeEntityDto {
   Default,
   Genre(UpdateGenreDto),
+  Artist(UpdateArtistDto),
 }
 
 impl CollaborativeEntity {
   pub fn id(&self) -> String {
     match self {
       CollaborativeEntity::Genre(genre) => genre.id.0.clone(),
+      CollaborativeEntity::Artist(artist) => artist.id.0.clone(),
       CollaborativeEntity::Default => panic!("CollaborativeEntity::Default não possui id!"),
     }
   }
   pub fn name(&self) -> String {
     match self {
       CollaborativeEntity::Genre(..) => "Genre".to_string(),
+      CollaborativeEntity::Artist(..) => "Artist".to_string(),
       CollaborativeEntity::Default => panic!("CollaborativeEntity::Default não possui name!"),
     }
   }
@@ -37,6 +44,7 @@ impl CollaborativeEntity {
 pub enum CollaborativeEntityId {
   Default,
   Genre(UUID4),
+  Artist(UUID4),
 }
 
 pub trait GetChanges<T> {
@@ -51,6 +59,7 @@ impl IntoRecord for CollaborativeEntity {
   fn into(&self) -> serde_json::Value {
     match self {
       CollaborativeEntity::Genre(genre) => IntoRecord::into(genre),
+      CollaborativeEntity::Artist(artist) => IntoRecord::into(artist),
       value => panic!("IntoRecord não implementado para o valor: {:#?}", value),
     }
   }
@@ -60,6 +69,7 @@ impl IntoRecord for UpdateCollaborativeEntityDto {
   fn into(&self) -> serde_json::Value {
     match self {
       UpdateCollaborativeEntityDto::Genre(genre_dto) => IntoRecord::into(genre_dto),
+      UpdateCollaborativeEntityDto::Artist(artist_dto) => IntoRecord::into(artist_dto),
       value => panic!("IntoRecord não implementado para o valor: {:#?}", value),
     }
   }

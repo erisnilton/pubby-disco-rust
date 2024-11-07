@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::Postgres;
 use uuid::Uuid;
 
@@ -10,7 +9,7 @@ use crate::{
     genre::Genre,
     user::User,
   },
-  shared::vo::{IntoRecord, Slug, UUID4},
+  shared::vo::{IntoRecord, UUID4},
 };
 
 pub struct SqlxActivityRepository {
@@ -98,15 +97,22 @@ impl From<ActivityRecord> for Activity {
           "Genre" => {
             crate::shared::vo::CollaborativeEntity::Genre(value.changes.unwrap_or_default().into())
           }
+          "Artist" => {
+            crate::shared::vo::CollaborativeEntity::Artist(value.changes.unwrap_or_default().into())
+          }
           value => panic!("Unexpected entity name: {}", value),
         }),
         "Update" => ActivityChange::Update {
           entity: match value.entity_name.as_str() {
             "Genre" => crate::shared::vo::CollaborativeEntity::Genre(Genre::default()),
+            "Artist" => crate::shared::vo::CollaborativeEntity::Artist(Default::default()),
             value => panic!("Unexpected entity name: {}", value),
           },
           new_value: match value.entity_name.as_str() {
             "Genre" => crate::shared::vo::UpdateCollaborativeEntityDto::Genre(
+              value.changes.clone().unwrap_or_default().into(),
+            ),
+            "Artist" => crate::shared::vo::UpdateCollaborativeEntityDto::Artist(
               value.changes.clone().unwrap_or_default().into(),
             ),
             value => panic!("Unexpected entity name: {}", value),
@@ -115,12 +121,18 @@ impl From<ActivityRecord> for Activity {
             "Genre" => crate::shared::vo::UpdateCollaborativeEntityDto::Genre(
               value.changes.clone().unwrap_or_default().into(),
             ),
+            "Artist" => crate::shared::vo::UpdateCollaborativeEntityDto::Artist(
+              value.changes.clone().unwrap_or_default().into(),
+            ),
             value => panic!("Unexpected entity name: {}", value),
           },
         },
         "Delete" => ActivityChange::Delete(match value.entity_name.as_str() {
           "Genre" => {
             crate::shared::vo::CollaborativeEntity::Genre(value.changes.unwrap_or_default().into())
+          }
+          "Artist" => {
+            crate::shared::vo::CollaborativeEntity::Artist(value.changes.unwrap_or_default().into())
           }
           value => panic!("Unexpected entity name: {}", value),
         }),

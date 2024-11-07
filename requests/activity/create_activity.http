@@ -4,8 +4,10 @@ Cookie: session_id=s95OHVHI0lg8cyk3U71vD9VVlmW6bPdwWXcLEJ1iVHAt0+FfDwViynepcrlrh
 
 {
   "Create": {
-    "Genre": {
-      "name": "Rock"
+    "Artist": {
+      "name": "Michael Jackson",
+      "slug": "michael-jackson",
+      "country": "USA"
     }
   }
 }
