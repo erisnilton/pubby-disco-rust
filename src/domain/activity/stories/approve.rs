@@ -4,7 +4,7 @@ use crate::{
     activity::{error::EntityUpdateError, Activity, ActivityStatus},
     user::User,
   },
-  shared::vo::UUID4,
+  shared::vo::{collaborative::CollaborativeEntityName, UUID4},
 };
 
 #[derive(Debug, Clone)]
@@ -27,6 +27,7 @@ pub async fn execute(
   activity_repository: &mut impl crate::domain::activity::ActivityRepository,
   repository_genre: &mut impl crate::domain::genre::GenreRepository,
   artist_repository: &mut impl crate::domain::artists::repository::ArtistRepository,
+  album_repository: &mut impl crate::domain::album::AlbumRepository,
   input: Input,
 ) -> Result<Activity, ApproveActivityError> {
   if !input.actor.is_curator {
@@ -43,13 +44,13 @@ pub async fn execute(
       .set_curator_status(ActivityStatus::Approved, &input.actor)
       .map_err(ApproveActivityError::ActivityError)?;
 
-    match activity.change.entity_name().as_str() {
-      "Genre" => {
+    match activity.change.entity_name() {
+      CollaborativeEntityName::Genre => {
         domain::genre::stories::apply_changes::execute(repository_genre, activity.change.clone())
           .await
           .map_err(|err| ApproveActivityError::EntityUpdateError(EntityUpdateError::Genre(err)))?;
       }
-      "Artist" => {
+      CollaborativeEntityName::Artist => {
         domain::artists::stories::apply_changes::execute(
           artist_repository,
           activity.change.clone(),
@@ -57,7 +58,11 @@ pub async fn execute(
         .await
         .map_err(|err| ApproveActivityError::EntityUpdateError(EntityUpdateError::Artist(err)))?;
       }
-      _ => return Err(ApproveActivityError::InvalidEntity),
+      CollaborativeEntityName::Album => {
+        domain::album::stories::apply_changes::execute(album_repository, activity.change.clone())
+          .await
+          .map_err(|err| ApproveActivityError::EntityUpdateError(EntityUpdateError::Album(err)))?;
+      }
     }
 
     return Ok(activity);
@@ -86,6 +91,7 @@ mod tests {
     let mut user_repository = InMemoryUserRepository::new(&app_state);
     let mut genre_repository = crate::infra::in_memory::InMemoryGenreRepository::new(&app_state);
     let mut artist_repository = crate::infra::in_memory::InMemoryArtistRepository::new(&app_state);
+    let mut album_repository = crate::infra::in_memory::InMemoryAlbumRepository::new(&app_state);
 
     let user = User {
       username: "user".to_string(),
@@ -127,6 +133,7 @@ mod tests {
       &mut activity_repository,
       &mut genre_repository,
       &mut artist_repository,
+      &mut album_repository,
       input,
     )
     .await

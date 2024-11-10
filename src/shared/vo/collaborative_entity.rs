@@ -3,24 +3,25 @@ use core::panic;
 use serde::{Deserialize, Serialize};
 
 use crate::domain::{
+  album::{dto::UpdateAlbumDto, AlbumEntity},
   artists::{dto::UpdateArtistDto, Artist},
   genre::{dto::UpdateGenreDto, Genre},
 };
 
-use super::UUID4;
+use super::{collaborative::CollaborativeEntityName, UUID4};
 
 #[derive(Debug, Clone)]
 pub enum CollaborativeEntity {
-  Default,
   Genre(Genre),
   Artist(Artist),
+  Album(AlbumEntity),
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum UpdateCollaborativeEntityDto {
-  Default,
+pub enum UpdateCollaborativeEntity {
   Genre(UpdateGenreDto),
   Artist(UpdateArtistDto),
+  Album(UpdateAlbumDto),
 }
 
 impl CollaborativeEntity {
@@ -28,23 +29,23 @@ impl CollaborativeEntity {
     match self {
       CollaborativeEntity::Genre(genre) => genre.id.0.clone(),
       CollaborativeEntity::Artist(artist) => artist.id.0.clone(),
-      CollaborativeEntity::Default => panic!("CollaborativeEntity::Default não possui id!"),
+      CollaborativeEntity::Album(album) => album.id.0.clone(),
     }
   }
-  pub fn name(&self) -> String {
+  pub fn name(&self) -> CollaborativeEntityName {
     match self {
-      CollaborativeEntity::Genre(..) => "Genre".to_string(),
-      CollaborativeEntity::Artist(..) => "Artist".to_string(),
-      CollaborativeEntity::Default => panic!("CollaborativeEntity::Default não possui name!"),
+      CollaborativeEntity::Genre(..) => CollaborativeEntityName::Genre,
+      CollaborativeEntity::Artist(..) => CollaborativeEntityName::Artist,
+      CollaborativeEntity::Album(..) => CollaborativeEntityName::Album,
     }
   }
 }
 
 #[derive(Debug, Deserialize, serde::Serialize)]
 pub enum CollaborativeEntityId {
-  Default,
   Genre(UUID4),
   Artist(UUID4),
+  Album(UUID4),
 }
 
 pub trait GetChanges<T> {
@@ -60,51 +61,69 @@ impl IntoRecord for CollaborativeEntity {
     match self {
       CollaborativeEntity::Genre(genre) => IntoRecord::into(genre),
       CollaborativeEntity::Artist(artist) => IntoRecord::into(artist),
-      value => panic!("IntoRecord não implementado para o valor: {:#?}", value),
+      CollaborativeEntity::Album(album) => IntoRecord::into(album),
     }
   }
 }
 
-impl IntoRecord for UpdateCollaborativeEntityDto {
+impl IntoRecord for UpdateCollaborativeEntity {
   fn into(&self) -> serde_json::Value {
     match self {
-      UpdateCollaborativeEntityDto::Genre(genre_dto) => IntoRecord::into(genre_dto),
-      UpdateCollaborativeEntityDto::Artist(artist_dto) => IntoRecord::into(artist_dto),
-      value => panic!("IntoRecord não implementado para o valor: {:#?}", value),
+      UpdateCollaborativeEntity::Genre(genre_dto) => IntoRecord::into(genre_dto),
+      UpdateCollaborativeEntity::Artist(artist_dto) => IntoRecord::into(artist_dto),
+      UpdateCollaborativeEntity::Album(album_dto) => IntoRecord::into(album_dto),
     }
   }
 }
 
-impl GetChanges<UpdateCollaborativeEntityDto> for CollaborativeEntity {
+impl GetChanges<UpdateCollaborativeEntity> for CollaborativeEntity {
   fn get_changes(
     &self,
-    changes: UpdateCollaborativeEntityDto,
-  ) -> (UpdateCollaborativeEntityDto, UpdateCollaborativeEntityDto) {
-    if let CollaborativeEntity::Genre(genre) = self {
-      if let UpdateCollaborativeEntityDto::Genre(genre_changes) = changes {
-        let (old_value, new_value) = genre.get_changes(genre_changes);
+    changes: UpdateCollaborativeEntity,
+  ) -> (UpdateCollaborativeEntity, UpdateCollaborativeEntity) {
+    match self {
+      CollaborativeEntity::Genre(genre) => match changes {
+        UpdateCollaborativeEntity::Genre(genre_changes) => {
+          let (old_value, new_value) = genre.get_changes(genre_changes);
 
-        return (
-          UpdateCollaborativeEntityDto::Genre(old_value),
-          UpdateCollaborativeEntityDto::Genre(new_value),
-        );
-      }
+          return (
+            UpdateCollaborativeEntity::Genre(old_value),
+            UpdateCollaborativeEntity::Genre(new_value),
+          );
+        }
+        value => panic!(
+          "Era esperado um UpdateCollaborativeEntityDto::Genre, mas foi recebido: {:#?}",
+          value
+        ),
+      },
+      CollaborativeEntity::Album(album) => match changes {
+        UpdateCollaborativeEntity::Album(album_changes) => {
+          let (old_value, new_value) = album.get_changes(album_changes);
 
-      panic!(
-        "Era esperado um UpdateCollaborativeEntityDto::Genre, mas foi recebido: {:#?}",
-        changes
-      );
+          return (
+            UpdateCollaborativeEntity::Album(old_value),
+            UpdateCollaborativeEntity::Album(new_value),
+          );
+        }
+        value => panic!(
+          "Era esperado um UpdateCollaborativeEntityDto::Album, mas foi recebido: {:#?}",
+          value
+        ),
+      },
+      CollaborativeEntity::Artist(artist) => match changes {
+        UpdateCollaborativeEntity::Artist(artist_changes) => {
+          let (old_value, new_value) = artist.get_changes(artist_changes);
+
+          return (
+            UpdateCollaborativeEntity::Artist(old_value),
+            UpdateCollaborativeEntity::Artist(new_value),
+          );
+        }
+        value => panic!(
+          "Era esperado um UpdateCollaborativeEntityDto::Artist, mas foi recebido: {:#?}",
+          value
+        ),
+      },
     }
-
-    panic!(
-      "Era esperado um CollaborativeEntity, mas foi recebido: {:#?}",
-      self
-    );
-  }
-}
-
-impl Default for CollaborativeEntity {
-  fn default() -> Self {
-    Self::Default
   }
 }

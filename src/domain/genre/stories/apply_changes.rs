@@ -1,6 +1,6 @@
 use crate::{
   domain::{activity::ActivityChange, genre::GenreRepositoryError},
-  shared::vo::{CollaborativeEntity, UpdateCollaborativeEntityDto},
+  shared::vo::{CollaborativeEntity, UpdateCollaborativeEntity},
 };
 
 #[derive(Debug, Clone)]
@@ -33,8 +33,8 @@ pub async fn execute(
     } => match (entity, old_value, new_value) {
       (
         CollaborativeEntity::Genre(mut genre),
-        UpdateCollaborativeEntityDto::Genre(old_value),
-        UpdateCollaborativeEntityDto::Genre(new_value),
+        UpdateCollaborativeEntity::Genre(old_value),
+        UpdateCollaborativeEntity::Genre(new_value),
       ) => {
         genre.apply_changes(&old_value, &new_value);
         repository_genre

@@ -8,7 +8,10 @@ use crate::{
   domain::{self, activity::stories::CreateActivityInput},
   infra::{
     actix::{artist, errors::ErrorResponse},
-    sqlx::{SqlxActivityRepository, SqlxArtistRepository, SqlxGenreRepository, SqlxUserRepository},
+    sqlx::{
+      SqlxActivityRepository, SqlxAlbumRepository, SqlxArtistRepository, SqlxGenreRepository,
+      SqlxUserRepository,
+    },
   },
   shared::vo::UUID4,
   AppState,
@@ -22,6 +25,8 @@ async fn create_activity(
   let mut activity_repository = SqlxActivityRepository::new(state.db.clone());
   let mut genre_repository = SqlxGenreRepository::new(state.db.clone());
   let mut user_repository = SqlxUserRepository::new(&state);
+  let mut artist_repository = SqlxArtistRepository::new(state.db.clone());
+  let mut album_repository = SqlxAlbumRepository::new(state.db.clone());
   let actor = crate::infra::actix::utils::get_actor(&mut user_repository, &session).await;
 
   if let Err(error) = actor {
@@ -33,6 +38,8 @@ async fn create_activity(
   let result = domain::activity::stories::create_activity(
     &mut activity_repository,
     &mut genre_repository,
+    &mut artist_repository,
+    &mut album_repository,
     CreateActivityInput {
       data: data.into(),
       user: actor,
@@ -57,6 +64,7 @@ async fn aprove_activity(
   let mut user_repository = SqlxUserRepository::new(&state);
   let mut genre_repository = SqlxGenreRepository::new(state.db.clone());
   let mut artist_repository = SqlxArtistRepository::new(state.db.clone());
+  let mut album_reposirtory = SqlxAlbumRepository::new(state.db.clone());
   let actor = crate::infra::actix::utils::get_actor(&mut user_repository, &session).await;
   if let Err(error) = actor {
     return error.into();
@@ -66,6 +74,7 @@ async fn aprove_activity(
     &mut activity_repository,
     &mut genre_repository,
     &mut artist_repository,
+    &mut album_reposirtory,
     domain::activity::stories::approve::Input {
       activity_id: UUID4::new(data.activity_id).unwrap_or_default(),
       actor,

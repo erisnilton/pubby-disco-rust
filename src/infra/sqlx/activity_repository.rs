@@ -68,7 +68,8 @@ impl Into<ActivityRecord> for &Activity {
         ActivityChange::Delete(entity) => entity,
         ActivityChange::Update { entity, .. } => entity,
       }
-      .name(),
+      .name()
+      .into(),
       revision_date: self.revision_date.map(|date| date.naive_utc()),
       reason: match &self.status {
         ActivityStatus::Rejected(reason) => Some(reason.clone()),
@@ -100,28 +101,38 @@ impl From<ActivityRecord> for Activity {
           "Artist" => {
             crate::shared::vo::CollaborativeEntity::Artist(value.changes.unwrap_or_default().into())
           }
+          "Album" => {
+            crate::shared::vo::CollaborativeEntity::Album(value.changes.unwrap_or_default().into())
+          }
           value => panic!("Unexpected entity name: {}", value),
         }),
         "Update" => ActivityChange::Update {
           entity: match value.entity_name.as_str() {
             "Genre" => crate::shared::vo::CollaborativeEntity::Genre(Genre::default()),
             "Artist" => crate::shared::vo::CollaborativeEntity::Artist(Default::default()),
+            "Album" => crate::shared::vo::CollaborativeEntity::Album(Default::default()),
             value => panic!("Unexpected entity name: {}", value),
           },
           new_value: match value.entity_name.as_str() {
-            "Genre" => crate::shared::vo::UpdateCollaborativeEntityDto::Genre(
+            "Genre" => crate::shared::vo::UpdateCollaborativeEntity::Genre(
               value.changes.clone().unwrap_or_default().into(),
             ),
-            "Artist" => crate::shared::vo::UpdateCollaborativeEntityDto::Artist(
+            "Artist" => crate::shared::vo::UpdateCollaborativeEntity::Artist(
+              value.changes.clone().unwrap_or_default().into(),
+            ),
+            "Album" => crate::shared::vo::UpdateCollaborativeEntity::Album(
               value.changes.clone().unwrap_or_default().into(),
             ),
             value => panic!("Unexpected entity name: {}", value),
           },
           old_value: match value.entity_name.as_str() {
-            "Genre" => crate::shared::vo::UpdateCollaborativeEntityDto::Genre(
+            "Genre" => crate::shared::vo::UpdateCollaborativeEntity::Genre(
               value.changes.clone().unwrap_or_default().into(),
             ),
-            "Artist" => crate::shared::vo::UpdateCollaborativeEntityDto::Artist(
+            "Artist" => crate::shared::vo::UpdateCollaborativeEntity::Artist(
+              value.changes.clone().unwrap_or_default().into(),
+            ),
+            "Album" => crate::shared::vo::UpdateCollaborativeEntity::Album(
               value.changes.clone().unwrap_or_default().into(),
             ),
             value => panic!("Unexpected entity name: {}", value),
@@ -133,6 +144,9 @@ impl From<ActivityRecord> for Activity {
           }
           "Artist" => {
             crate::shared::vo::CollaborativeEntity::Artist(value.changes.unwrap_or_default().into())
+          }
+          "Album" => {
+            crate::shared::vo::CollaborativeEntity::Album(value.changes.unwrap_or_default().into())
           }
           value => panic!("Unexpected entity name: {}", value),
         }),

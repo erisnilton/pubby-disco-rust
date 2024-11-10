@@ -64,6 +64,7 @@ impl From<EntityUpdateError> for ErrorResponse {
     match value {
       EntityUpdateError::Genre(error) => error.into(),
       EntityUpdateError::Artist(error) => error.into(),
+      EntityUpdateError::Album(error) => error.into(),
     }
   }
 }

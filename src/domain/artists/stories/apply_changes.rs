@@ -1,6 +1,6 @@
 use crate::{
   domain::{activity::ActivityChange, artists::repository::ArtistRepositoryError},
-  shared::vo::{CollaborativeEntity, UpdateCollaborativeEntityDto},
+  shared::vo::{CollaborativeEntity, UpdateCollaborativeEntity},
 };
 
 #[derive(Debug, Clone)]
@@ -33,8 +33,8 @@ pub async fn execute(
     } => match (entity, old_value, new_value) {
       (
         CollaborativeEntity::Artist(mut artist),
-        UpdateCollaborativeEntityDto::Artist(old_value),
-        UpdateCollaborativeEntityDto::Artist(new_value),
+        UpdateCollaborativeEntity::Artist(old_value),
+        UpdateCollaborativeEntity::Artist(new_value),
       ) => {
         artist.apply_changes(&old_value, &new_value);
         repository_artist

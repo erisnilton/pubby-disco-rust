@@ -20,19 +20,20 @@ pub enum ActivityStatusDTO {
 pub enum UpdateCollaborativeEntityDto {
   Genre(crate::infra::actix::genre::dto::UpdateGenreDto),
   Artist(crate::infra::actix::artist::dto::UpdateArtistDto),
+  Album(crate::infra::actix::album::dto::UpdateAlbumDto),
 }
 
-impl From<shared::vo::UpdateCollaborativeEntityDto> for UpdateCollaborativeEntityDto {
-  fn from(value: shared::vo::UpdateCollaborativeEntityDto) -> Self {
+impl From<shared::vo::UpdateCollaborativeEntity> for UpdateCollaborativeEntityDto {
+  fn from(value: shared::vo::UpdateCollaborativeEntity) -> Self {
     match value {
-      shared::vo::UpdateCollaborativeEntityDto::Default => {
-        panic!("Invalid value UpdateCollaborativeEntityDto::Default")
-      }
-      shared::vo::UpdateCollaborativeEntityDto::Genre(genre) => {
+      shared::vo::UpdateCollaborativeEntity::Genre(genre) => {
         UpdateCollaborativeEntityDto::Genre(genre.into())
       }
-      shared::vo::UpdateCollaborativeEntityDto::Artist(artist) => {
+      shared::vo::UpdateCollaborativeEntity::Artist(artist) => {
         UpdateCollaborativeEntityDto::Artist(artist.into())
+      }
+      shared::vo::UpdateCollaborativeEntity::Album(album) => {
+        UpdateCollaborativeEntityDto::Album(album.into())
       }
     }
   }

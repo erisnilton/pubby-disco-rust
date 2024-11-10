@@ -4,4 +4,5 @@ use crate::domain::{artists, genre};
 pub enum EntityUpdateError {
   Genre(genre::stories::apply_changes::ApplyChangesError),
   Artist(artists::stories::apply_changes::ApplyChangesError),
+  Album(crate::domain::album::stories::apply_changes::ApplyChangesError),
 }

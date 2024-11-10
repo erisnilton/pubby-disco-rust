@@ -1,8 +1,12 @@
-use chrono::Utc;
+use actix_web::{cookie::time::macros::date, web::Data};
+use chrono::{NaiveDate, Utc};
 
 use crate::{
-  domain::{artists::Artist, genre::Genre, user::User},
-  shared::vo::{CollaborativeEntity, Slug, UpdateCollaborativeEntityDto, UUID4},
+  domain::{album::AlbumEntity, artists::Artist, genre::Genre, user::User},
+  shared::vo::{
+    collaborative::CollaborativeEntityName, CollaborativeEntity, Slug, UpdateCollaborativeEntity,
+    UUID4,
+  },
 };
 
 use super::dto::CreateActivityEntityDto;
@@ -31,8 +35,8 @@ pub enum ActivityChange {
   Create(CollaborativeEntity),
   Update {
     entity: CollaborativeEntity,
-    old_value: UpdateCollaborativeEntityDto,
-    new_value: UpdateCollaborativeEntityDto,
+    old_value: UpdateCollaborativeEntity,
+    new_value: UpdateCollaborativeEntity,
   },
   Delete(CollaborativeEntity),
 }
@@ -46,7 +50,7 @@ impl ActivityChange {
     }
   }
 
-  pub fn entity_name(&self) -> String {
+  pub fn entity_name(&self) -> CollaborativeEntityName {
     match self {
       ActivityChange::Create(entity) => entity.name(),
       ActivityChange::Update { entity, .. } => entity.name(),
@@ -89,6 +93,16 @@ impl Activity {
           country: data.country.clone(),
           ..Default::default()
         }),
+        CreateActivityEntityDto::Album(data) => CollaborativeEntity::Album(AlbumEntity {
+          name: data.name.clone(),
+          artist_ids: data.artist_ids.clone(),
+          cover: data.cover.clone(),
+          parental_rating: data.parental_rating,
+          release_date: data
+            .release_date
+            .map(|date| NaiveDate::parse_from_str(&date, "%Y-%m-%d").unwrap_or_default()),
+          ..Default::default()
+        }),
       }),
       ..Default::default()
     }
@@ -97,8 +111,8 @@ impl Activity {
   pub fn update(
     user: User,
     entity: CollaborativeEntity,
-    old_value: UpdateCollaborativeEntityDto,
-    new_value: UpdateCollaborativeEntityDto,
+    old_value: UpdateCollaborativeEntity,
+    new_value: UpdateCollaborativeEntity,
   ) -> Self {
     Self {
       user,
@@ -135,7 +149,7 @@ impl Default for Activity {
       user: User::default(),
       status: ActivityStatus::Pending,
       curator: None,
-      change: ActivityChange::Create(CollaborativeEntity::default()),
+      change: ActivityChange::Create(CollaborativeEntity::Genre(Genre::default())),
       revision_date: None,
       created_at: chrono::Utc::now(),
       updated_at: chrono::Utc::now(),
@@ -146,7 +160,7 @@ impl Default for Activity {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::domain::activity::{ActivityRepository, ActivityStatus};
+  use crate::domain::activity::ActivityStatus;
 
   #[tokio::test]
   async fn test_fail_when_activity_status_is_not_pending() {

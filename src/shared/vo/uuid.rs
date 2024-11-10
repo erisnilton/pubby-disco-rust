@@ -7,7 +7,7 @@ pub enum UUIDError {
   InvalidUUID,
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, Deserialize, Hash)]
 pub struct UUID4(pub String);
 
 impl UUID4 {

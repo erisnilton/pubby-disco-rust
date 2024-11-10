@@ -1,7 +1,7 @@
 use chrono::Utc;
 use serde_json::json;
 
-use crate::shared::vo::{IntoRecord, Slug, UUID4};
+use crate::shared::vo::{GetChanges, IntoRecord, Slug, UUID4};
 
 use super::dto::UpdateArtistDto;
 
@@ -93,5 +93,29 @@ impl From<serde_json::Value> for Artist {
         .parse()
         .unwrap(),
     }
+  }
+}
+
+impl GetChanges<UpdateArtistDto> for Artist {
+  fn get_changes(&self, changes: UpdateArtistDto) -> (UpdateArtistDto, UpdateArtistDto) {
+    let mut old_value = UpdateArtistDto::default();
+    let mut new_value = UpdateArtistDto::default();
+
+    if changes.name.is_some() && changes.name != Some(self.name.clone()) {
+      old_value.name = Some(self.name.clone());
+      new_value.name = changes.name;
+    }
+
+    if changes.slug.is_some() && changes.slug != Some(self.slug.to_string()) {
+      old_value.slug = Some(self.slug.to_string());
+      new_value.slug = changes.slug;
+    }
+
+    if changes.country.is_some() && changes.country != Some(self.country.clone()) {
+      old_value.country = Some(self.country.clone());
+      new_value.country = changes.country;
+    }
+
+    (old_value, new_value)
   }
 }
