@@ -1,7 +1,7 @@
 PATCH  http://localhost:8080/activities/approve
 Content-Type: application/json
-Cookie: session_id=l0Gd7FZytvy2wHqyEjxwE5+mM%2FpHAeMNV1TuB0tamqJf4hNTjMPALDWVdc689H5ubrOamAX0tSiREFxMPxzUhF2h3FvrKESq%2FHGeXRB6L76GDg%3D%3D;
+Cookie: session_id=rV6HjTk2rYw55yNT08bxg5i4mcvTay7TmGkNQ6d+qxgX0zGW3QiVqJ%2FAW2NBXas2+d08wO3PYP+QYyB%2F4IP+QJOpYdDekb%2FhKB317eQiqQ+aqg%3D%3D;
 
 {
-  "activity_id": "408a85b9-9e7c-4f00-b411-97edc9d94bac"
+  "activity_id": "cb8ad14b-fe77-49cd-8dcb-aac27f0bbfde"
 }

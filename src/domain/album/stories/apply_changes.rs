@@ -1,57 +1,39 @@
-use crate::{
-  domain::{activity::ActivityChange, album::AlbumRepositoryError},
-  shared::vo::UpdateCollaborativeEntity,
-};
-
 #[derive(Debug, Clone)]
-pub enum ApplyChangesError {
-  RepositoryError(AlbumRepositoryError),
+pub enum Error {
+  RepositoryError(crate::domain::album::repository::Error),
   EntityIsNotAlbum,
 }
 
-pub type Input = ActivityChange;
+pub type Input = crate::domain::album::contribution::Contribution;
 
 pub async fn execute(
-  repository_album: &mut impl crate::domain::album::AlbumRepository,
+  album_repository: &mut impl crate::domain::album::repository::AlbumRepository,
   input: Input,
-) -> Result<(), ApplyChangesError> {
+) -> Result<(), Error> {
   match input {
-    ActivityChange::Create(entity) => match entity {
-      crate::shared::vo::CollaborativeEntity::Album(album) => {
-        repository_album
-          .create(album)
-          .await
-          .map_err(ApplyChangesError::RepositoryError)?;
-      }
-      _ => return Err(ApplyChangesError::EntityIsNotAlbum),
-    },
-    ActivityChange::Update {
-      entity,
-      old_value,
-      new_value,
-    } => match (entity, old_value, new_value) {
-      (
-        crate::shared::vo::CollaborativeEntity::Album(mut album),
-        UpdateCollaborativeEntity::Album(old_value),
-        UpdateCollaborativeEntity::Album(new_value),
-      ) => {
-        album.apply_changes(&old_value, &new_value);
-        repository_album
-          .update(album)
-          .await
-          .map_err(ApplyChangesError::RepositoryError)?;
-      }
-      _ => return Err(ApplyChangesError::EntityIsNotAlbum),
-    },
-    ActivityChange::Delete(entity) => match entity {
-      crate::shared::vo::CollaborativeEntity::Album(album) => {
-        repository_album
-          .delete_by_id(&album.id)
-          .await
-          .map_err(ApplyChangesError::RepositoryError)?;
-      }
-      _ => return Err(ApplyChangesError::EntityIsNotAlbum),
-    },
+    crate::domain::album::contribution::Contribution::Create(album) => {
+      album_repository
+        .create(&album)
+        .await
+        .map_err(Error::RepositoryError)?;
+    }
+    crate::domain::album::contribution::Contribution::Update {
+      entity: mut album,
+      changes,
+    } => {
+      album.apply_changes(&changes);
+      album_repository
+        .update(&album)
+        .await
+        .map_err(Error::RepositoryError)?;
+    }
+    crate::domain::album::contribution::Contribution::Delete(album) => {
+      album_repository
+        .delete_by_id(&album.id)
+        .await
+        .map_err(Error::RepositoryError)?;
+    }
   }
+
   Ok(())
 }

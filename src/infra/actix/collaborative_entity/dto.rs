@@ -1,5 +1,5 @@
 use crate::{
-  domain::{album::dto::AlbumPresenter, artists::dto::ArtistPresenter},
+  domain::{album::dto::AlbumPresenter, artist::dto::ArtistPresenter},
   infra::actix::genre::dto::GenrePresenter,
   shared::{self, vo::UUID4},
 };
@@ -42,17 +42,17 @@ pub enum UpdateCollaborativeEntityDto {
   Album(crate::infra::actix::album::dto::UpdateAlbumDto),
 }
 
-impl From<CreateActivityEntityDTO> for crate::domain::activity::dto::CreateActivityEntityDto {
+impl From<CreateActivityEntityDTO> for crate::domain::activity::input::CreateActivityEntityDto {
   fn from(value: CreateActivityEntityDTO) -> Self {
     match value {
       CreateActivityEntityDTO::Genre(dto) => {
-        crate::domain::activity::dto::CreateActivityEntityDto::Genre(dto.into())
+        crate::domain::activity::input::CreateActivityEntityDto::Genre(dto.into())
       }
       CreateActivityEntityDTO::Artist(dto) => {
-        crate::domain::activity::dto::CreateActivityEntityDto::Artist(dto.into())
+        crate::domain::activity::input::CreateActivityEntityDto::Artist(dto.into())
       }
       CreateActivityEntityDTO::Album(dto) => {
-        crate::domain::activity::dto::CreateActivityEntityDto::Album(dto.into())
+        crate::domain::activity::input::CreateActivityEntityDto::Album(dto.into())
       }
     }
   }

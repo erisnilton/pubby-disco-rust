@@ -2,7 +2,10 @@ use std::collections::HashSet;
 
 use chrono::NaiveDate;
 
-use crate::{domain, infra, shared::vo::UUID4};
+use crate::{
+  domain, infra,
+  shared::vo::{Slug, UUID4},
+};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, validator::Validate)]
 pub struct CreateAlbumDTO {
@@ -11,11 +14,10 @@ pub struct CreateAlbumDTO {
   #[validate(url)]
   pub cover: Option<String>,
 
-  // todo: change to date
-  pub release_date: Option<String>,
+  pub release_date: Option<chrono::NaiveDate>,
 
   #[validate(range(min = 0, max = 18))]
-  pub parental_rating: Option<i8>,
+  pub parental_rating: Option<u8>,
 
   #[validate(length(min = 1))]
   pub artist_ids: HashSet<UUID4>,
@@ -29,18 +31,22 @@ pub struct UpdateAlbumDto {
   #[validate(url)]
   pub cover: Option<String>,
 
+  pub slug: Option<Slug>,
+
   // todo: change to date
   pub release_date: Option<NaiveDate>,
 
   #[validate(range(min = 0, max = 18))]
-  pub parental_rating: Option<i8>,
+  pub parental_rating: Option<u8>,
 
   #[validate(length(min = 1))]
   pub artist_ids: Option<HashSet<UUID4>>,
 }
 
-impl From<domain::album::dto::UpdateAlbumDto> for UpdateAlbumDto {
-  fn from(value: domain::album::dto::UpdateAlbumDto) -> Self {
+impl From<infra::actix::album::dto::CreateAlbumDTO>
+  for domain::album::stories::contribute::CreateInput
+{
+  fn from(value: infra::actix::album::dto::CreateAlbumDTO) -> Self {
     Self {
       name: value.name,
       cover: value.cover,
@@ -51,11 +57,12 @@ impl From<domain::album::dto::UpdateAlbumDto> for UpdateAlbumDto {
   }
 }
 
-impl From<infra::actix::album::dto::UpdateAlbumDto> for domain::album::dto::UpdateAlbumDto {
-  fn from(value: infra::actix::album::dto::UpdateAlbumDto) -> Self {
+impl From<UpdateAlbumDto> for domain::album::contribution::changes::Changes {
+  fn from(value: UpdateAlbumDto) -> Self {
     Self {
       name: value.name,
       cover: value.cover,
+      slug: value.slug,
       release_date: value.release_date,
       parental_rating: value.parental_rating,
       artist_ids: value.artist_ids,

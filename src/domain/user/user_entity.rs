@@ -1,8 +1,10 @@
-use crate::shared::vo::UUID4;
+use chrono::Timelike;
+
+use crate::shared::util::naive_now;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct User {
-  pub id: UUID4,
+  pub id: crate::shared::vo::UUID4,
   pub username: String,
   pub display_name: String,
   pub email: String,
@@ -14,16 +16,18 @@ pub struct User {
 
 impl Default for User {
   fn default() -> Self {
+    let now = naive_now();
     Self {
-      id: UUID4::default(),
+      id: crate::shared::vo::UUID4::default(),
+
       username: String::default(),
       display_name: String::default(),
       email: String::default(),
       password: String::default(),
       is_curator: false,
 
-      created_at: chrono::Utc::now().naive_utc(),
-      updated_at: chrono::Utc::now().naive_utc(),
+      created_at: now,
+      updated_at: now,
     }
   }
 }

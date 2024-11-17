@@ -5,8 +5,8 @@ CREATE TABLE "genre" (
     "name" VARCHAR(128) NOT NULL,
     "slug" VARCHAR(128) NOT NULL,
     "parent_id" UUID REFERENCES "genre" ("id"),
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE UNIQUE INDEX "idx_genre_slug" ON "genre" ("slug");

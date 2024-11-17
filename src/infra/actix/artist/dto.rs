@@ -1,18 +1,16 @@
-use crate::{
-  domain::{self, artists::dto::ArtistPresenter},
-  infra,
-};
+use shared::vo::Slug;
+
+use crate::*;
 
 #[derive(Debug, serde::Deserialize, validator::Validate)]
 pub struct CreateArtistDTO {
   #[validate(length(min = 1, max = 128))]
   name: String,
 
-  #[validate(length(min = 1, max = 128))]
-  slug: String,
+  slug: Option<crate::shared::vo::Slug>,
 
   #[validate(length(min = 1, max = 128))]
-  country: String,
+  country: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, validator::Validate, Default)]
@@ -20,58 +18,47 @@ pub struct UpdateArtistDto {
   #[validate(length(min = 1, max = 128))]
   pub name: Option<String>,
 
-  #[validate(length(min = 1, max = 128))]
-  pub slug: Option<String>,
+  pub slug: Option<crate::shared::vo::Slug>,
 
   #[validate(length(min = 1, max = 128))]
   pub country: Option<String>,
 }
 
-impl From<CreateArtistDTO> for crate::domain::artists::dto::CreateArtistDto {
+impl From<CreateArtistDTO> for crate::domain::artist::stories::contribute::CreateArtistInput {
   fn from(value: infra::actix::artist::dto::CreateArtistDTO) -> Self {
     Self {
       name: value.name,
-      slug: value.slug,
       country: value.country,
+      slug: value.slug,
     }
   }
 }
 
-impl From<UpdateArtistDto> for crate::domain::artists::dto::UpdateArtistDto {
+impl From<UpdateArtistDto> for crate::domain::artist::contribution::changes::Changes {
   fn from(value: UpdateArtistDto) -> Self {
     Self {
       name: value.name,
-      slug: value.slug,
       country: value.country,
-    }
-  }
-}
-
-impl From<crate::domain::artists::dto::UpdateArtistDto> for UpdateArtistDto {
-  fn from(value: crate::domain::artists::dto::UpdateArtistDto) -> Self {
-    Self {
-      name: value.name,
       slug: value.slug,
-      country: value.country,
     }
   }
 }
 
 #[derive(Debug, serde::Serialize)]
-pub struct GenrePresenter {
+pub struct ArtistPresenter {
   id: String,
   name: String,
+  slug: Slug,
+  country: Option<String>,
 }
 
-impl From<domain::artists::Artist> for ArtistPresenter {
-  fn from(value: domain::artists::Artist) -> Self {
+impl From<domain::artist::Artist> for ArtistPresenter {
+  fn from(value: domain::artist::Artist) -> Self {
     Self {
       id: value.id.to_string(),
       name: value.name,
-      slug: value.slug.to_string(),
+      slug: value.slug,
       country: value.country,
-      created_at: value.created_at,
-      updated_at: value.updated_at,
     }
   }
 }

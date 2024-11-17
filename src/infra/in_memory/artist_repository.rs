@@ -1,17 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{
-  domain::artists::{
-    repository::{ArtistRepository, ArtistRepositoryError},
-    Artist,
-  },
-  shared::vo::Slug,
-  AppState,
-};
+use crate::*;
 
 #[derive(Debug, Default)]
 pub struct InMemoryArtistRepository {
-  pub artists: HashMap<String, Artist>,
+  pub artists: HashMap<String, domain::artist::Artist>,
 }
 
 impl InMemoryArtistRepository {
@@ -22,42 +15,47 @@ impl InMemoryArtistRepository {
   }
 }
 
-impl ArtistRepository for InMemoryArtistRepository {
+impl domain::artist::repository::ArtistRepository for InMemoryArtistRepository {
   async fn find_by_slug(
     &mut self,
-    slug: &Slug,
-  ) -> Result<Artist, crate::domain::artists::repository::ArtistRepositoryError> {
-    match self.artists.get(&slug.to_string()) {
-      Some(artist) => Ok(artist.clone()),
-      None => Err(ArtistRepositoryError::NotFound),
-    }
+    slug: &shared::vo::Slug,
+  ) -> Result<Option<domain::artist::Artist>, domain::artist::repository::Error> {
+    let artist = self
+      .artists
+      .values()
+      .find(|artist| artist.slug == *slug)
+      .cloned();
+    Ok(artist)
   }
 
   async fn create(
     &mut self,
-    input: &Artist,
-  ) -> Result<Artist, crate::domain::artists::repository::ArtistRepositoryError> {
+    input: &domain::artist::Artist,
+  ) -> Result<domain::artist::Artist, domain::artist::repository::Error> {
     self.artists.insert(input.id.to_string(), input.clone());
     Ok(input.clone())
   }
 
-  async fn update(&mut self, input: &Artist) -> Result<Artist, ArtistRepositoryError> {
+  async fn update(
+    &mut self,
+    input: &domain::artist::Artist,
+  ) -> Result<domain::artist::Artist, domain::artist::repository::Error> {
     self.artists.insert(input.id.to_string(), input.clone());
     Ok(input.clone())
   }
 
   async fn find_by_id(
     &mut self,
-    id: &crate::shared::vo::UUID4,
-  ) -> Result<Option<Artist>, ArtistRepositoryError> {
+    id: &shared::vo::UUID4,
+  ) -> Result<Option<domain::artist::Artist>, domain::artist::repository::Error> {
     let artist = self.artists.get(&id.to_string()).cloned();
     Ok(artist)
   }
 
   async fn delete_by_id(
     &mut self,
-    id: &crate::shared::vo::UUID4,
-  ) -> Result<(), ArtistRepositoryError> {
+    id: &shared::vo::UUID4,
+  ) -> Result<(), domain::artist::repository::Error> {
     self.artists.remove(&id.to_string());
     Ok(())
   }
@@ -65,79 +63,104 @@ impl ArtistRepository for InMemoryArtistRepository {
 
 #[cfg(test)]
 pub mod tests {
+  use domain::artist::repository::ArtistRepository;
+
   use super::*;
-  use crate::{domain::artists::Artist, shared::vo::Slug};
 
   #[tokio::test]
   async fn test_find_by_slug() {
-    let artist = Artist::new(
-      "name".to_string(),
-      Slug::new("slug").unwrap(),
-      "country".to_string(),
-    );
+    let artist = domain::artist::Artist {
+      name: String::from("name"),
+      slug: shared::vo::Slug::new("slug").unwrap(),
+      country: Some(String::from("BR")),
+      ..Default::default()
+    };
+
     let mut artists = HashMap::new();
+
     artists.insert(artist.id.to_string(), artist.clone());
+
     let mut repo = InMemoryArtistRepository { artists };
 
     let result = repo.find_by_slug(&artist.slug).await.unwrap();
-    assert_eq!(result.id, artist.id);
+
+    assert_eq!(result, Some(artist));
   }
 
   #[tokio::test]
   async fn test_find_by_slug_not_found() {
-    let artist = Artist::new(
-      "name".to_string(),
-      Slug::new("slug").unwrap(),
-      "country".to_string(),
-    );
+    let artist = domain::artist::Artist {
+      name: String::from("name"),
+      slug: shared::vo::Slug::new("slug").unwrap(),
+      country: Some(String::from("BR")),
+      ..Default::default()
+    };
     let artists = HashMap::new();
     let mut repo = InMemoryArtistRepository { artists };
 
-    let result = repo.find_by_slug(&artist.slug).await;
-    assert!(result.is_err());
+    let result = repo
+      .find_by_slug(&artist.slug)
+      .await
+      .expect("Error finding artist");
+
+    assert_eq!(result, None);
   }
 
   #[tokio::test]
   async fn test_create() {
-    let artist = Artist::new(
-      "name".to_string(),
-      Slug::new("slug").unwrap(),
-      "country".to_string(),
-    );
+    let artist = domain::artist::Artist {
+      name: String::from("name"),
+      slug: shared::vo::Slug::new("slug").unwrap(),
+      country: Some(String::from("BR")),
+      ..Default::default()
+    };
     let artists = HashMap::new();
     let mut repo = InMemoryArtistRepository { artists };
 
-    let result = repo.create(&artist).await.unwrap();
+    let result = repo.create(&artist).await.expect("Error creating artist");
     assert_eq!(result.id, artist.id);
   }
 
   #[tokio::test]
   async fn test_update() {
-    let artist = Artist::new(
-      "name".to_string(),
-      Slug::new("slug").unwrap(),
-      "country".to_string(),
-    );
+    let artist = domain::artist::Artist {
+      name: String::from("name"),
+      slug: shared::vo::Slug::new("slug").unwrap(),
+      country: Some(String::from("BR")),
+      ..Default::default()
+    };
+
     let mut artists = HashMap::new();
+
     artists.insert(artist.id.to_string(), artist.clone());
+
     let mut repo = InMemoryArtistRepository { artists };
 
-    let result = repo.update(&artist).await.unwrap();
-    assert_eq!(result.id, artist.id);
+    let result = repo.update(&artist).await.expect("Error updating artist");
+
+    assert_eq!(result, artist);
   }
 
   #[tokio::test]
   async fn test_find_by_id() {
-    let artist = Artist::new(
-      "name".to_string(),
-      Slug::new("slug").unwrap(),
-      "country".to_string(),
-    );
+    let artist = domain::artist::Artist {
+      name: String::from("name"),
+      slug: shared::vo::Slug::new("slug").unwrap(),
+      country: Some(String::from("BR")),
+      ..Default::default()
+    };
+
     let mut artists = HashMap::new();
+
     artists.insert(artist.id.to_string(), artist.clone());
+
     let mut repo = InMemoryArtistRepository { artists };
 
-    let result = repo.find_by_id(&artist.id).await.unwrap();
-    assert_eq!(result.unwrap().id, artist.id);
+    let result = repo
+      .find_by_id(&artist.id)
+      .await
+      .expect("Error finding artist");
+
+    assert_eq!(result, Some(artist));
   }
 }

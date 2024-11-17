@@ -115,6 +115,9 @@ async fn main() -> std::io::Result<()> {
       .configure(|config| {
         infra::actix::user::controller::configure(config);
         infra::actix::activity::controller::configure(config);
+        infra::actix::genre::controller::configure(config);
+        infra::actix::artist::controller::configure(config);
+        infra::actix::album::controller::configure(config);
       })
   })
   .bind((api_host.as_str(), api_port))

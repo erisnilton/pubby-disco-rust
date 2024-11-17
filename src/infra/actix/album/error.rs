@@ -1,25 +1,37 @@
-use crate::{
-  domain::album::{stories::apply_changes::ApplyChangesError, AlbumRepositoryError},
-  infra::actix::errors::ErrorResponse,
-};
+use crate::*;
 
-impl From<ApplyChangesError> for ErrorResponse {
-  fn from(value: ApplyChangesError) -> Self {
+impl From<domain::album::stories::apply_changes::Error> for infra::actix::errors::ErrorResponse {
+  fn from(value: domain::album::stories::apply_changes::Error) -> Self {
     match value {
-      ApplyChangesError::EntityIsNotAlbum => {
-        ErrorResponse::BadRequest(String::from("Entity is not an album"), None)
+      domain::album::stories::apply_changes::Error::EntityIsNotAlbum => {
+        infra::actix::errors::ErrorResponse::BadRequest(
+          String::from("Entity is not an album"),
+          None,
+        )
       }
-      ApplyChangesError::RepositoryError(error) => error.into(),
+      domain::album::stories::apply_changes::Error::RepositoryError(error) => error.into(),
     }
   }
 }
 
-impl From<AlbumRepositoryError> for ErrorResponse {
-  fn from(value: AlbumRepositoryError) -> Self {
+impl From<domain::album::repository::Error> for infra::actix::errors::ErrorResponse {
+  fn from(value: domain::album::repository::Error) -> Self {
     match value {
-      AlbumRepositoryError::DatabaseError(error) => {
-        ErrorResponse::InternalServerError(error.to_string())
+      domain::album::repository::Error::DatabaseError(error) => {
+        infra::actix::errors::ErrorResponse::InternalServerError(error.to_string())
       }
+    }
+  }
+}
+
+impl From<domain::album::stories::contribute::Error> for infra::actix::errors::ErrorResponse {
+  fn from(value: domain::album::stories::contribute::Error) -> Self {
+    match value {
+      domain::album::stories::contribute::Error::ActivityRepositoryError(error) => error.into(),
+      domain::album::stories::contribute::Error::AlbumNotFound => {
+        infra::actix::errors::ErrorResponse::NotFound(String::from("Album not found"))
+      }
+      domain::album::stories::contribute::Error::AlbumRepositoryError(error) => error.into(),
     }
   }
 }

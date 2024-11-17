@@ -1,0 +1,7 @@
+PATCH  http://localhost:8080/contribute/album/11bb40c2-9a5f-447d-bb9f-c0afe3070ed9
+Content-Type: application/json
+Cookie: session_id=O+QVNPYIRa9CyUbph9BkX6979tUA2ayLd1vLa7H3YlZbOT0dPOX+VSWpIdqidLRoD1oEqvaVNGu3f1vVT%2FXoMe9ugl26+796IXvdi1NmhgEb2Q%3D%3D;
+
+{
+  "cover": "https://example.com/cover.jpg"
+}

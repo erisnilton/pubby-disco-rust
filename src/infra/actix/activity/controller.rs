@@ -1,74 +1,22 @@
-use actix_session::Session;
-use actix_web::{
-  web::{patch, post, Data, Json},
-  HttpResponse, Responder,
-};
-
-use crate::{
-  domain::{self, activity::stories::CreateActivityInput},
-  infra::{
-    actix::{artist, errors::ErrorResponse},
-    sqlx::{
-      SqlxActivityRepository, SqlxAlbumRepository, SqlxArtistRepository, SqlxGenreRepository,
-      SqlxUserRepository,
-    },
-  },
-  shared::vo::UUID4,
-  AppState,
-};
-async fn create_activity(
-  state: Data<AppState>,
-  Json(data): Json<super::dto::CreateActivityDto>,
-  session: Session,
-) -> impl Responder {
-  print!("{:?}", session.entries());
-  let mut activity_repository = SqlxActivityRepository::new(state.db.clone());
-  let mut genre_repository = SqlxGenreRepository::new(state.db.clone());
-  let mut user_repository = SqlxUserRepository::new(&state);
-  let mut artist_repository = SqlxArtistRepository::new(state.db.clone());
-  let mut album_repository = SqlxAlbumRepository::new(state.db.clone());
-  let actor = crate::infra::actix::utils::get_actor(&mut user_repository, &session).await;
-
-  if let Err(error) = actor {
-    return error.into();
-  }
-
-  let actor = actor.unwrap();
-
-  let result = domain::activity::stories::create_activity(
-    &mut activity_repository,
-    &mut genre_repository,
-    &mut artist_repository,
-    &mut album_repository,
-    CreateActivityInput {
-      data: data.into(),
-      user: actor,
-    },
-  )
-  .await;
-
-  match result {
-    Ok(data) => HttpResponse::Created().json(
-      Into::<super::presenters::PublicActivityPresenter>::into(data),
-    ),
-    Err(error) => Into::<ErrorResponse>::into(error).into(),
-  }
-}
+use crate::*;
 
 async fn aprove_activity(
-  state: Data<AppState>,
-  Json(data): Json<super::dto::ApproveActivityDto>,
-  session: Session,
-) -> impl Responder {
-  let mut activity_repository = SqlxActivityRepository::new(state.db.clone());
-  let mut user_repository = SqlxUserRepository::new(&state);
-  let mut genre_repository = SqlxGenreRepository::new(state.db.clone());
-  let mut artist_repository = SqlxArtistRepository::new(state.db.clone());
-  let mut album_reposirtory = SqlxAlbumRepository::new(state.db.clone());
+  app_state: actix_web::web::Data<AppState>,
+  actix_web::web::Json(data): actix_web::web::Json<super::dto::ApproveActivityDto>,
+  session: actix_session::Session,
+) -> impl actix_web::Responder {
+  let mut activity_repository = di::activity::repositories::ActivityRepository::new(&app_state);
+  let mut user_repository = di::user::repositories::UserRepository::new(&app_state);
+  let mut genre_repository = di::genre::repositories::GenreRepository::new(&app_state);
+  let mut artist_repository = di::artist::repositories::ArtistRepository::new(&app_state);
+  let mut album_reposirtory = di::album::repositories::AlbumRepository::new(&app_state);
+
   let actor = crate::infra::actix::utils::get_actor(&mut user_repository, &session).await;
+
   if let Err(error) = actor {
     return error.into();
   }
+
   let actor = actor.unwrap();
   let result = domain::activity::stories::approve::execute(
     &mut activity_repository,
@@ -76,36 +24,39 @@ async fn aprove_activity(
     &mut artist_repository,
     &mut album_reposirtory,
     domain::activity::stories::approve::Input {
-      activity_id: UUID4::new(data.activity_id).unwrap_or_default(),
+      activity_id: shared::vo::UUID4::new(data.activity_id).unwrap_or_default(),
       actor,
     },
   )
   .await;
 
   match result {
-    Ok(data) => HttpResponse::Ok().json(Into::<super::presenters::PublicActivityPresenter>::into(
-      data,
-    )),
-    Err(error) => Into::<ErrorResponse>::into(error).into(),
+    Ok(data) => actix_web::HttpResponse::Ok().json(Into::<
+      super::presenters::PublicActivityPresenter,
+    >::into(data)),
+    Err(error) => Into::<infra::actix::errors::ErrorResponse>::into(error).into(),
   }
 }
 
 async fn reject_activity(
-  state: Data<AppState>,
-  Json(data): Json<super::dto::RejectActivityDto>,
-  session: Session,
-) -> impl Responder {
-  let mut activity_repository = SqlxActivityRepository::new(state.db.clone());
-  let mut user_repository = SqlxUserRepository::new(&state);
+  state: actix_web::web::Data<AppState>,
+  actix_web::web::Json(data): actix_web::web::Json<super::dto::RejectActivityDto>,
+  session: actix_session::Session,
+) -> impl actix_web::Responder {
+  let mut activity_repository = di::activity::repositories::ActivityRepository::new(&state);
+  let mut user_repository = di::user::repositories::UserRepository::new(&state);
   let actor = crate::infra::actix::utils::get_actor(&mut user_repository, &session).await;
+
   if let Err(error) = actor {
     return error.into();
   }
+
   let actor = actor.unwrap();
+
   let result = domain::activity::stories::reject::execute(
     &mut activity_repository,
     domain::activity::stories::reject::Input {
-      activity_id: UUID4::new(data.activity_id).unwrap_or_default(),
+      activity_id: shared::vo::UUID4::new(data.activity_id).unwrap_or_default(),
       reason: data.reason.clone(),
       user: actor,
     },
@@ -113,16 +64,21 @@ async fn reject_activity(
   .await;
 
   match result {
-    Ok(data) => HttpResponse::Ok().json(Into::<super::presenters::PublicActivityPresenter>::into(
-      data,
-    )),
-    Err(error) => Into::<ErrorResponse>::into(error).into(),
+    Ok(data) => actix_web::HttpResponse::Ok().json(Into::<
+      super::presenters::PublicActivityPresenter,
+    >::into(data)),
+    Err(error) => Into::<infra::actix::errors::ErrorResponse>::into(error).into(),
   }
 }
 
 pub fn configure(config: &mut actix_web::web::ServiceConfig) {
   config
-    .route("/activities", post().to(create_activity))
-    .route("/activities/reject", patch().to(reject_activity))
-    .route("/activities/approve", patch().to(aprove_activity));
+    .route(
+      "/activities/reject",
+      actix_web::web::patch().to(reject_activity),
+    )
+    .route(
+      "/activities/approve",
+      actix_web::web::patch().to(aprove_activity),
+    );
 }

@@ -7,7 +7,7 @@ pub enum UUIDError {
   InvalidUUID,
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq, Deserialize, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UUID4(pub String);
 
 impl UUID4 {
@@ -40,5 +40,24 @@ impl Default for UUID4 {
 impl From<UUID4> for uuid::Uuid {
   fn from(value: UUID4) -> Self {
     uuid::Uuid::parse_str(&value.0).unwrap()
+  }
+}
+
+impl Serialize for UUID4 {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    serializer.serialize_str(&self.0)
+  }
+}
+
+impl<'de> Deserialize<'de> for UUID4 {
+  fn deserialize<D>(deserializer: D) -> Result<UUID4, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    let s = String::deserialize(deserializer)?;
+    Ok(UUID4(s))
   }
 }

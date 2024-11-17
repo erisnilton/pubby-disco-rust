@@ -1,13 +1,8 @@
-use std::collections::HashMap;
-
-use crate::{
-  domain::activity::{Activity, ActivityRepository},
-  AppState,
-};
+use crate::*;
 
 #[derive(Debug, Default)]
 pub struct InMemoryActivityRepository {
-  pub activities: HashMap<String, Activity>,
+  pub activities: HashMap<String, domain::activity::Activity>,
 }
 
 impl InMemoryActivityRepository {
@@ -18,11 +13,11 @@ impl InMemoryActivityRepository {
   }
 }
 
-impl ActivityRepository for InMemoryActivityRepository {
+impl domain::activity::repository::ActivityRepository for InMemoryActivityRepository {
   async fn create(
     &mut self,
-    input: &Activity,
-  ) -> Result<Activity, crate::domain::activity::ActivityRepositoryError> {
+    input: &domain::activity::Activity,
+  ) -> Result<domain::activity::Activity, crate::domain::activity::repository::Error> {
     self.activities.insert(input.id.0.clone(), input.clone());
     Ok(input.clone())
   }
@@ -30,14 +25,14 @@ impl ActivityRepository for InMemoryActivityRepository {
   async fn find_by_id(
     &self,
     id: &crate::shared::vo::UUID4,
-  ) -> Result<Option<Activity>, crate::domain::activity::ActivityRepositoryError> {
+  ) -> Result<Option<domain::activity::Activity>, crate::domain::activity::repository::Error> {
     Ok(self.activities.get(&id.0).cloned())
   }
 
   async fn update(
     &mut self,
-    activity: &Activity,
-  ) -> Result<Activity, crate::domain::activity::ActivityRepositoryError> {
+    activity: &domain::activity::Activity,
+  ) -> Result<domain::activity::Activity, crate::domain::activity::repository::Error> {
     self
       .activities
       .insert(activity.id.0.clone(), activity.clone());

@@ -1,89 +1,57 @@
-use crate::{
-  domain::{
-    activity::{
-      error::EntityUpdateError,
-      stories::{approve::ApproveActivityError, reject::RejectActivityError},
-      ActivityError, ActivityRepositoryError,
-    },
-    genre::stories::apply_changes::ApplyChangesError,
-  },
-  infra::actix::errors::ErrorResponse,
-};
+use crate::{domain, infra::actix::errors::ErrorResponse};
 
-impl From<ActivityRepositoryError> for ErrorResponse {
-  fn from(value: ActivityRepositoryError) -> Self {
+impl From<domain::activity::repository::Error> for ErrorResponse {
+  fn from(value: domain::activity::repository::Error) -> Self {
     match value {
-      ActivityRepositoryError::EntityNotFound => {
+      domain::activity::repository::Error::EntityNotFound => {
         ErrorResponse::NotFound(String::from("Activity not found"))
       }
-      ActivityRepositoryError::InternalServerError(message) => {
-        ErrorResponse::InternalServerError(message)
+      domain::activity::repository::Error::InternalServerError(err) => {
+        ErrorResponse::InternalServerError(err.to_string())
       }
     }
   }
 }
 
-impl From<ActivityError> for ErrorResponse {
-  fn from(value: ActivityError) -> Self {
+impl From<domain::activity::Error> for ErrorResponse {
+  fn from(value: domain::activity::Error) -> Self {
     match value {
-      ActivityError::ActivityIsNotPending => {
+      domain::activity::Error::ActivityIsNotPending => {
         ErrorResponse::BadRequest(String::from("Activity is not pending"), None)
       }
     }
   }
 }
 
-impl From<RejectActivityError> for ErrorResponse {
-  fn from(value: RejectActivityError) -> Self {
+impl From<domain::activity::stories::approve::Error> for ErrorResponse {
+  fn from(value: domain::activity::stories::approve::Error) -> Self {
     match value {
-      RejectActivityError::ActivityNotFound => {
+      domain::activity::stories::approve::Error::ActivityError(error) => error.into(),
+      domain::activity::stories::approve::Error::ActivityNotFound => {
         ErrorResponse::NotFound(String::from("Activity not found"))
       }
-      RejectActivityError::RepositoryError(error) => error.into(),
-      RejectActivityError::UserIsNotACurator => {
+      domain::activity::stories::approve::Error::AlbumApplyError(error) => error.into(),
+      domain::activity::stories::approve::Error::ArtistApplyError(error) => error.into(),
+      domain::activity::stories::approve::Error::GenreApplyError(error) => error.into(),
+      domain::activity::stories::approve::Error::RepositoryError(error) => error.into(),
+      domain::activity::stories::approve::Error::UserIsNotACurator => {
         ErrorResponse::Forbidden(String::from("User is not a curator"))
       }
-      RejectActivityError::ActivityError(error) => error.into(),
     }
   }
 }
 
-impl From<ApplyChangesError> for ErrorResponse {
-  fn from(value: ApplyChangesError) -> Self {
+impl From<domain::activity::stories::reject::Error> for ErrorResponse {
+  fn from(value: domain::activity::stories::reject::Error) -> Self {
     match value {
-      ApplyChangesError::EntityIsNotGenre => {
-        ErrorResponse::BadRequest(String::from("Entity is not a genre"), None)
-      }
-      ApplyChangesError::RepositoryError(error) => error.into(),
-    }
-  }
-}
-
-impl From<EntityUpdateError> for ErrorResponse {
-  fn from(value: EntityUpdateError) -> Self {
-    match value {
-      EntityUpdateError::Genre(error) => error.into(),
-      EntityUpdateError::Artist(error) => error.into(),
-      EntityUpdateError::Album(error) => error.into(),
-    }
-  }
-}
-
-impl From<ApproveActivityError> for ErrorResponse {
-  fn from(value: ApproveActivityError) -> Self {
-    match value {
-      ApproveActivityError::ActivityNotFound => {
+      domain::activity::stories::reject::Error::ActivityError(error) => error.into(),
+      domain::activity::stories::reject::Error::ActivityNotFound => {
         ErrorResponse::NotFound(String::from("Activity not found"))
       }
-      ApproveActivityError::RepositoryError(error) => error.into(),
-      ApproveActivityError::UserIsNotACurator => {
+      domain::activity::stories::reject::Error::ActivityRepositoryError(error) => error.into(),
+      domain::activity::stories::reject::Error::UserIsNotACurator => {
         ErrorResponse::Forbidden(String::from("User is not a curator"))
       }
-      ApproveActivityError::ActivityError(error) => error.into(),
-      ApproveActivityError::InvalidEntity => {
-        ErrorResponse::BadRequest(String::from("Invalid entity"), None)
-      }
-      ApproveActivityError::EntityUpdateError(error) => error.into(),
     }
   }
 }

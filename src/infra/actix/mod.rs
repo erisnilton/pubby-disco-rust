@@ -1,7 +1,7 @@
 pub mod activity;
 pub mod album;
 pub mod artist;
-pub mod collaborative_entity;
+// pub mod collaborative_entity;
 pub mod errors;
 pub mod genre;
 pub mod user;

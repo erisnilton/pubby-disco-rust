@@ -1,13 +1,8 @@
-use std::collections::HashMap;
-
-use crate::{
-  domain::album::{AlbumEntity, AlbumRepository},
-  AppState,
-};
+use crate::*;
 
 #[derive(Debug, Default)]
 pub struct InMemoryAlbumRepository {
-  pub albums: HashMap<String, AlbumEntity>,
+  pub albums: HashMap<String, domain::album::Album>,
 }
 
 impl InMemoryAlbumRepository {
@@ -18,11 +13,11 @@ impl InMemoryAlbumRepository {
   }
 }
 
-impl AlbumRepository for InMemoryAlbumRepository {
+impl domain::album::repository::AlbumRepository for InMemoryAlbumRepository {
   async fn create(
     &mut self,
-    input: AlbumEntity,
-  ) -> Result<AlbumEntity, crate::domain::album::AlbumRepositoryError> {
+    input: &domain::album::Album,
+  ) -> Result<domain::album::Album, crate::domain::album::repository::Error> {
     self.albums.insert(input.id.0.clone(), input.clone());
     Ok(input.clone())
   }
@@ -30,21 +25,21 @@ impl AlbumRepository for InMemoryAlbumRepository {
   async fn find_by_id(
     &mut self,
     id: &crate::shared::vo::UUID4,
-  ) -> Result<Option<AlbumEntity>, crate::domain::album::AlbumRepositoryError> {
+  ) -> Result<Option<domain::album::Album>, crate::domain::album::repository::Error> {
     Ok(self.albums.get(&id.0).cloned())
   }
 
   async fn update(
     &mut self,
-    album: AlbumEntity,
-  ) -> Result<AlbumEntity, crate::domain::album::AlbumRepositoryError> {
+    album: &domain::album::Album,
+  ) -> Result<domain::album::Album, crate::domain::album::repository::Error> {
     self.albums.insert(album.id.0.clone(), album.clone());
     Ok(album.clone())
   }
   async fn delete_by_id(
     &mut self,
     id: &crate::shared::vo::UUID4,
-  ) -> Result<(), crate::domain::album::AlbumRepositoryError> {
+  ) -> Result<(), crate::domain::album::repository::Error> {
     self.albums.remove(&id.0);
     Ok(())
   }

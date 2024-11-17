@@ -1,66 +1,44 @@
-use crate::domain;
+use crate::{
+  domain,
+  shared::vo::{Slug, UUID4},
+};
 
 #[derive(Debug, serde::Deserialize, validator::Validate)]
 pub struct CreateGenreDTO {
   #[validate(length(min = 1, max = 128))]
   name: String,
 
-  #[validate(custom(function = "crate::shared::validator::uuid"))]
-  parent_id: Option<String>,
+  slug: Option<Slug>,
+
+  parent_id: Option<UUID4>,
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, validator::Validate, Default)]
+impl From<CreateGenreDTO> for domain::genre::stories::contribute::CreateGenreInput {
+  fn from(value: CreateGenreDTO) -> Self {
+    domain::genre::stories::contribute::CreateGenreInput {
+      name: value.name.clone(),
+      parent_id: value.parent_id,
+      slug: value.slug,
+    }
+  }
+}
+
+#[derive(Debug, Clone, serde::Deserialize, validator::Validate)]
 pub struct UpdateGenreDto {
   #[validate(length(min = 1, max = 128))]
   pub name: Option<String>,
 
-  #[validate(length(min = 1, max = 128))]
-  pub slug: Option<String>,
+  pub parent_id: Option<Option<UUID4>>,
 
-  #[validate(custom(function = "crate::shared::validator::uuid"))]
-  pub parent_id: Option<String>,
+  pub slug: Option<Slug>,
 }
 
-impl From<CreateGenreDTO> for crate::domain::genre::dto::CreateGenreDto {
-  fn from(value: CreateGenreDTO) -> Self {
-    Self {
-      name: value.name,
-      parent_id: value.parent_id,
-    }
-  }
-}
-
-impl From<UpdateGenreDto> for crate::domain::genre::dto::UpdateGenreDto {
+impl From<UpdateGenreDto> for domain::genre::contribution::changes::Changes {
   fn from(value: UpdateGenreDto) -> Self {
     Self {
       name: value.name,
-      slug: value.slug,
       parent_id: value.parent_id,
-    }
-  }
-}
-
-impl From<crate::domain::genre::dto::UpdateGenreDto> for UpdateGenreDto {
-  fn from(value: crate::domain::genre::dto::UpdateGenreDto) -> Self {
-    Self {
-      name: value.name,
       slug: value.slug,
-      parent_id: value.parent_id,
-    }
-  }
-}
-
-#[derive(Debug, serde::Serialize)]
-pub struct GenrePresenter {
-  id: String,
-  name: String,
-}
-
-impl From<domain::genre::Genre> for GenrePresenter {
-  fn from(value: domain::genre::Genre) -> Self {
-    Self {
-      id: value.id.to_string(),
-      name: value.name,
     }
   }
 }
