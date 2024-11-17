@@ -1,11 +1,20 @@
--- Add up migration script here
+CREATE TYPE "album_type" AS ENUM(
+    'Album',
+    'EP',
+    'Single',
+    'Compilation'
+);
 
 CREATE TABLE "album" (
     "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
+
+
     "name" VARCHAR(255) NOT NULL,
+    "album_type" "album_type" NOT NULL DEFAULT 'Album',
     "cover" VARCHAR(255),
     "release_date" DATE,
     "parental_rating" SMALLINT,
+    
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

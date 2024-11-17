@@ -2,6 +2,7 @@
 pub struct CreateInput {
   pub name: String,
   pub cover: Option<String>,
+  pub album_type: crate::domain::album::AlbumType,
   pub release_date: Option<chrono::NaiveDate>,
   pub parental_rating: Option<u8>,
   pub artist_ids: std::collections::HashSet<crate::shared::vo::UUID4>,
@@ -12,6 +13,7 @@ impl From<CreateInput> for crate::domain::album::Album {
     Self {
       name: value.name.clone(),
       cover: value.cover.clone(),
+      album_type: value.album_type,
       release_date: value.release_date,
       parental_rating: value.parental_rating,
       artist_ids: value.artist_ids.clone(),

@@ -6,6 +6,8 @@ pub struct Changes {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub cover: Option<String>,
 
+  pub album_type: Option<crate::domain::album::AlbumType>,
+
   #[serde(skip_serializing_if = "Option::is_none")]
   pub release_date: Option<chrono::NaiveDate>,
 

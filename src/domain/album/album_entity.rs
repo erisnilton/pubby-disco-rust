@@ -1,8 +1,8 @@
-use chrono::Timelike;
+use std::{fmt::Display, str::FromStr};
 
 use crate::shared::util::naive_now;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum AlbumType {
   Single,
   EP,
@@ -10,11 +10,37 @@ pub enum AlbumType {
   Compilation,
 }
 
+impl Display for AlbumType {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Self::Single => write!(f, "Single"),
+      Self::EP => write!(f, "EP"),
+      Self::Album => write!(f, "Album"),
+      Self::Compilation => write!(f, "Compilation"),
+    }
+  }
+}
+
+impl FromStr for AlbumType {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "Single" => Ok(Self::Single),
+      "EP" => Ok(Self::EP),
+      "Album" => Ok(Self::Album),
+      "Compilation" => Ok(Self::Compilation),
+      _ => Err(format!("Invalid AlbumType: {}", s)),
+    }
+  }
+}
+
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Album {
   pub id: crate::shared::vo::UUID4,
 
   pub name: String,
+  pub album_type: AlbumType,
   pub cover: Option<String>,
   pub release_date: Option<chrono::NaiveDate>,
   pub parental_rating: Option<u8>,
@@ -28,6 +54,10 @@ impl Album {
   pub fn apply_changes(&mut self, changes: &super::contribution::changes::Changes) {
     if let Some(value) = &changes.name {
       self.name = value.clone();
+    }
+
+    if let Some(value) = &changes.album_type {
+      self.album_type = value.clone();
     }
 
     if let Some(value) = &changes.cover {
@@ -57,6 +87,7 @@ impl Default for Album {
     Self {
       id: crate::shared::vo::UUID4::generate(),
       name: String::new(),
+      album_type: AlbumType::Album,
       cover: Some(String::new()),
       release_date: None,
       parental_rating: None,

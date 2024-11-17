@@ -26,11 +26,12 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
       })?;
     sqlx::query!(
       r#"
-      INSERT INTO "album" ("id", "name", "cover", "release_date", "parental_rating", "created_at", "updated_at")
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO "album" ("id", "name", "album_type", "cover", "release_date", "parental_rating", "created_at", "updated_at")
+      VALUES ($1, $2, $3::album_type, $4, $5, $6, $7, $8)
       "#,
       Into::<uuid::Uuid>::into(album.id.clone()),
       album.name,
+      album.album_type.to_string() as _,
       album.cover,
       album.release_date,
       album.parental_rating.map(i16::from),
@@ -203,7 +204,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
   ) -> Result<Option<crate::domain::album::Album>, crate::domain::album::repository::Error> {
     let result = sqlx::query!(
       r#"
-      SELECT "id", "name", "cover", "release_date", "parental_rating", "created_at", "updated_at"
+      SELECT "id", "name", "album_type" as "album_type: String", "cover", "release_date", "parental_rating", "created_at", "updated_at"
       FROM "album"
       WHERE "id" = $1
       "#,
@@ -239,6 +240,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
     Ok(Some(domain::album::Album {
       id: shared::vo::UUID4::new(result.id).unwrap(),
       artist_ids: artists_id,
+      album_type: result.album_type.parse().unwrap(),
       cover: result.cover,
       name: result.name,
       parental_rating: result.parental_rating.map(|value| value as u8),
