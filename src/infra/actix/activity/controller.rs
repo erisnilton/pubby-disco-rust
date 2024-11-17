@@ -1,10 +1,13 @@
+use shared::vo::UUID4;
+
 use crate::*;
 
 async fn aprove_activity(
   app_state: actix_web::web::Data<AppState>,
-  actix_web::web::Json(data): actix_web::web::Json<super::dto::ApproveActivityDto>,
+  path: actix_web::web::Path<UUID4>,
   session: actix_session::Session,
 ) -> impl actix_web::Responder {
+  let activity_id = path.into_inner();
   let mut activity_repository = di::activity::repositories::ActivityRepository::new(&app_state);
   let mut user_repository = di::user::repositories::UserRepository::new(&app_state);
   let mut genre_repository = di::genre::repositories::GenreRepository::new(&app_state);
@@ -23,10 +26,7 @@ async fn aprove_activity(
     &mut genre_repository,
     &mut artist_repository,
     &mut album_reposirtory,
-    domain::activity::stories::approve::Input {
-      activity_id: shared::vo::UUID4::new(data.activity_id).unwrap_or_default(),
-      actor,
-    },
+    domain::activity::stories::approve::Input { activity_id, actor },
   )
   .await;
 
@@ -40,9 +40,12 @@ async fn aprove_activity(
 
 async fn reject_activity(
   state: actix_web::web::Data<AppState>,
+  path: actix_web::web::Path<UUID4>,
   actix_web::web::Json(data): actix_web::web::Json<super::dto::RejectActivityDto>,
   session: actix_session::Session,
 ) -> impl actix_web::Responder {
+  let activity_id = path.into_inner();
+
   let mut activity_repository = di::activity::repositories::ActivityRepository::new(&state);
   let mut user_repository = di::user::repositories::UserRepository::new(&state);
   let actor = crate::infra::actix::utils::get_actor(&mut user_repository, &session).await;
@@ -56,7 +59,7 @@ async fn reject_activity(
   let result = domain::activity::stories::reject::execute(
     &mut activity_repository,
     domain::activity::stories::reject::Input {
-      activity_id: shared::vo::UUID4::new(data.activity_id).unwrap_or_default(),
+      activity_id,
       reason: data.reason.clone(),
       user: actor,
     },
@@ -74,11 +77,11 @@ async fn reject_activity(
 pub fn configure(config: &mut actix_web::web::ServiceConfig) {
   config
     .route(
-      "/activities/reject",
+      "/activities/{activity_id}/reject",
       actix_web::web::patch().to(reject_activity),
     )
     .route(
-      "/activities/approve",
+      "/activities/{activity_id}/approve",
       actix_web::web::patch().to(aprove_activity),
     );
 }
