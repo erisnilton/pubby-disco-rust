@@ -11,12 +11,11 @@ pub struct CreateGenreInput {
 
 impl From<CreateGenreInput> for crate::domain::genre::Genre {
   fn from(value: CreateGenreInput) -> Self {
-    GenreBuilder::default()
+    GenreBuilder::new()
       .name(value.name.clone())
       .slug(value.slug.unwrap_or_else(|| Slug::generate(&value.name)))
       .parent_id(value.parent_id)
       .build()
-      .unwrap()
   }
 }
 

@@ -8,7 +8,7 @@ impl From<crate::domain::genre::Genre> for GenrePresenter {
   fn from(value: crate::domain::genre::Genre) -> Self {
     Self {
       id: value.id().to_string(),
-      name: value.name(),
+      name: value.name().clone(),
     }
   }
 }

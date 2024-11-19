@@ -1,5 +1,3 @@
-use chrono::Timelike;
-
 use crate::shared::util::naive_now;
 
 #[derive(Debug, Clone, PartialEq)]

@@ -181,10 +181,11 @@ pub mod tests {
       id: shared::vo::UUID4::new(ACTIVITY_ID).unwrap(),
       user_id: user.id.clone(),
       contribuition: shared::vo::Contribution::Genre(
-        domain::genre::contribution::Contribution::Create(domain::genre::Genre {
-          name: String::from("Forró"),
-          ..Default::default()
-        }),
+        domain::genre::contribution::Contribution::Create(
+          domain::genre::Genre::builder()
+            .name(String::from("Forró"))
+            .build(),
+        ),
       ),
       ..Default::default()
     };
@@ -245,10 +246,11 @@ pub mod tests {
       id: shared::vo::UUID4::new(ACTIVITY_ID).unwrap(),
       user_id: user.id.clone(),
       contribuition: shared::vo::Contribution::Genre(
-        domain::genre::contribution::Contribution::Create(domain::genre::Genre {
-          name: String::from("Forró"),
-          ..Default::default()
-        }),
+        domain::genre::contribution::Contribution::Create(
+          domain::genre::Genre::builder()
+            .name(String::from("Forró"))
+            .build(),
+        ),
       ),
       ..Default::default()
     };

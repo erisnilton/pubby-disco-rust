@@ -1,6 +1,6 @@
-use derive_builder::Builder;
+use domain_proc_macros::Entity;
 
-#[derive(Debug, Builder, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Entity, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Genre {
   id: crate::shared::vo::UUID4,
   slug: crate::shared::vo::Slug,
@@ -21,49 +21,6 @@ impl Genre {
     if let Some(value) = &changes.parent_id {
       self.set_parent_id(value.clone());
     }
-  }
-
-  pub fn id(&self) -> crate::shared::vo::UUID4 {
-    self.id.clone()
-  }
-
-  pub fn slug(&self) -> crate::shared::vo::Slug {
-    self.slug.clone()
-  }
-
-  pub fn set_slug(&mut self, slug: crate::shared::vo::Slug) {
-    self.slug = slug;
-    self.update_entity();
-  }
-
-  pub fn name(&self) -> String {
-    self.name.clone()
-  }
-
-  pub fn set_name(&mut self, name: String) {
-    self.name = name;
-    self.update_entity();
-  }
-
-  pub fn parent_id(&self) -> Option<crate::shared::vo::UUID4> {
-    self.parent_id.clone()
-  }
-
-  pub fn set_parent_id(&mut self, parent_id: Option<crate::shared::vo::UUID4>) {
-    self.parent_id = parent_id;
-    self.update_entity();
-  }
-
-  pub fn created_at(&self) -> chrono::NaiveDateTime {
-    self.created_at.clone()
-  }
-
-  pub fn updated_at(&self) -> chrono::NaiveDateTime {
-    self.updated_at.clone()
-  }
-
-  pub fn update_entity(&mut self) {
-    self.updated_at = crate::shared::util::naive_now();
   }
 }
 

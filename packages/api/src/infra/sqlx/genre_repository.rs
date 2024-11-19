@@ -35,14 +35,16 @@ impl GenreRepository for SqlxGenreRepository {
     .map_err(|err| Error::DatabaseError(err.to_string()))?;
 
     if let Some(row) = result {
-      return Ok(Some(Genre {
-        id: UUID4::new(row.id.to_string()).unwrap(),
-        name: row.name,
-        slug: Slug::new(row.slug).unwrap(),
-        parent_id: row.parent_id.map(|id| UUID4::new(id.to_string()).unwrap()),
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-      }));
+      return Ok(Some(
+        Genre::builder()
+          .id(UUID4::new(row.id.to_string()).unwrap())
+          .name(row.name)
+          .slug(Slug::new(row.slug).unwrap())
+          .parent_id(row.parent_id.map(|id| UUID4::new(id.to_string()).unwrap()))
+          .created_at(row.created_at)
+          .updated_at(row.updated_at)
+          .build(),
+      ));
     }
 
     Ok(None)
@@ -56,12 +58,15 @@ impl GenreRepository for SqlxGenreRepository {
       INSERT INTO "genre" ("id", "name", "slug", "parent_id", "created_at", "updated_at")
       VALUES ($1, $2, $3, $4, $5, $6)
       "#,
-      Into::<uuid::Uuid>::into(input.id.clone()),
-      input.name,
-      input.slug.to_string(),
-      input.parent_id.map(|id| Into::<uuid::Uuid>::into(id)),
-      input.created_at,
-      input.updated_at,
+      Into::<uuid::Uuid>::into(input.id().clone()),
+      input.name(),
+      input.slug().to_string(),
+      input
+        .parent_id()
+        .clone()
+        .map(|id| Into::<uuid::Uuid>::into(id)),
+      input.created_at(),
+      input.updated_at(),
     )
     .execute(&self.db)
     .await
@@ -78,11 +83,14 @@ impl GenreRepository for SqlxGenreRepository {
       SET "name" = $2, "slug" = $3, "parent_id" = $4, "updated_at" = $5
       WHERE "id" = $1
       "#,
-      Into::<uuid::Uuid>::into(input.id.clone()),
-      input.name,
-      input.slug.to_string(),
-      input.parent_id.map(|id| Into::<uuid::Uuid>::into(id)),
-      input.updated_at,
+      Into::<uuid::Uuid>::into(input.id().clone()),
+      input.name(),
+      input.slug().to_string(),
+      input
+        .parent_id()
+        .clone()
+        .map(|id| Into::<uuid::Uuid>::into(id)),
+      input.updated_at(),
     )
     .execute(&self.db)
     .await
@@ -130,12 +138,11 @@ mod tests {
 
     let mut repository_genre = SqlxGenreRepository::new(&app_state);
 
-    let genre = Genre {
-      id: UUID4::new(GENRE_ID).unwrap(),
-      name: "Test".to_string(),
-      slug: Slug::new("test_create_genre").unwrap(),
-      ..Default::default()
-    };
+    let genre = Genre::builder()
+      .id(UUID4::new(GENRE_ID).unwrap())
+      .name(String::from("Test"))
+      .slug(Slug::new("test_create_genre").unwrap())
+      .build();
 
     clean(&app_state.db).await;
 
@@ -145,7 +152,7 @@ mod tests {
       .expect("Falha ao criar Gênero");
 
     let result = repository_genre
-      .find_by_id(&genre.id)
+      .find_by_id(genre.id())
       .await
       .expect("Falha ao buscar Gênero")
       .expect("Gênero não encontrado");
@@ -176,22 +183,20 @@ mod tests {
 
     let mut repository_genre = SqlxGenreRepository::new(&app_state);
 
-    let genre = Genre {
-      id: UUID4::new(GENRE_ID).unwrap(),
-      name: "Test".to_string(),
-      slug: Slug::new("test_update_genre").unwrap(),
-      ..Default::default()
-    };
+    let genre = Genre::builder()
+      .id(UUID4::new(GENRE_ID).unwrap())
+      .name(String::from("Test"))
+      .slug(Slug::new("test_update_genre").unwrap())
+      .build();
 
     clean(&app_state.db).await;
 
     repository_genre.create(genre.clone()).await.unwrap();
 
-    let genre = Genre {
-      name: "Test 2".to_string(),
-      slug: Slug::new("test_update_genre2").unwrap(),
-      ..genre
-    };
+    let genre = Genre::builder()
+      .name(String::from("Test 2"))
+      .slug(Slug::new("test_update_genre2").unwrap())
+      .build();
 
     repository_genre
       .update(genre.clone())
@@ -199,7 +204,7 @@ mod tests {
       .expect("Falha ao atualizar Gênero");
 
     let result = repository_genre
-      .find_by_id(&genre.id)
+      .find_by_id(genre.id())
       .await
       .expect("Falha ao buscar Gênero")
       .expect("Gênero não encontrado");
@@ -230,12 +235,11 @@ mod tests {
 
     let mut repository_genre = SqlxGenreRepository::new(&app_state);
 
-    let genre = Genre {
-      id: UUID4::new(GENRE_ID).unwrap(),
-      name: "Test".to_string(),
-      slug: Slug::new("test_delete_genre").unwrap(),
-      ..Default::default()
-    };
+    let genre = Genre::builder()
+      .id(UUID4::new(GENRE_ID).unwrap())
+      .name(String::from("Test"))
+      .slug(Slug::new("test_delete_genre").unwrap())
+      .build();
 
     clean(&app_state.db).await;
 
@@ -245,12 +249,12 @@ mod tests {
       .expect("Falha ao criar Gênero");
 
     repository_genre
-      .delete_by_id(&genre.id)
+      .delete_by_id(genre.id())
       .await
       .expect("Falha ao deletar Gênero");
 
     let result = repository_genre
-      .find_by_id(&genre.id)
+      .find_by_id(genre.id())
       .await
       .expect("Falha ao buscar Gênero");
 
