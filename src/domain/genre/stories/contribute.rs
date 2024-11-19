@@ -1,4 +1,4 @@
-use crate::shared::vo::Slug;
+use crate::{domain::genre::GenreBuilder, shared::vo::Slug};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CreateGenreInput {
@@ -11,12 +11,12 @@ pub struct CreateGenreInput {
 
 impl From<CreateGenreInput> for crate::domain::genre::Genre {
   fn from(value: CreateGenreInput) -> Self {
-    Self {
-      name: value.name.clone(),
-      slug: value.slug.unwrap_or_else(|| Slug::generate(&value.name)),
-      parent_id: value.parent_id,
-      ..Default::default()
-    }
+    GenreBuilder::default()
+      .name(value.name.clone())
+      .slug(value.slug.unwrap_or_else(|| Slug::generate(&value.name)))
+      .parent_id(value.parent_id)
+      .build()
+      .unwrap()
   }
 }
 

@@ -31,7 +31,7 @@ pub async fn execute(
     }
     crate::domain::genre::contribution::Contribution::Delete(genre) => {
       repository_genre
-        .delete_by_id(&genre.id)
+        .delete_by_id(&genre.id())
         .await
         .map_err(Error::RepositoryError)?;
       Ok(())
