@@ -11,10 +11,10 @@ pub struct PublicUserPresenter {
 impl From<crate::domain::user::User> for PublicUserPresenter {
   fn from(user: crate::domain::user::User) -> Self {
     PublicUserPresenter {
-      id: user.id.to_string(),
-      username: user.username,
-      is_curator: user.is_curator,
-      created_at: user.created_at.and_utc(),
+      id: user.id().to_string(),
+      username: user.username().clone(),
+      is_curator: *user.is_curator(),
+      created_at: (*user.created_at()).and_utc(),
     }
   }
 }

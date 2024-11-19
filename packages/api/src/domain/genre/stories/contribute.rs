@@ -1,4 +1,7 @@
-use crate::{domain::genre::GenreBuilder, shared::vo::Slug};
+use crate::{
+  domain::genre::GenreBuilder,
+  shared::{self, vo::Slug},
+};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CreateGenreInput {
@@ -82,12 +85,11 @@ pub async fn execute(
     }
   };
 
-  let activity = crate::domain::activity::Activity {
-    user_id: input.actor_id,
-    contribuition: crate::shared::vo::Contribution::Genre(contribution),
-    status: crate::domain::activity::ActivityStatus::Pending,
-    ..Default::default()
-  };
+  let activity = crate::domain::activity::Activity::builder()
+    .user_id(input.actor_id)
+    .contribution(shared::vo::Contribution::Genre(contribution))
+    .status(crate::domain::activity::ActivityStatus::Pending)
+    .build();
 
   activity_repository
     .create(&activity)

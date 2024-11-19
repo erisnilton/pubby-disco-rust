@@ -1,5 +1,7 @@
 use std::{fmt::Display, str::FromStr};
 
+use domain_proc_macros::Entity;
+
 use crate::shared::util::naive_now;
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -35,19 +37,19 @@ impl FromStr for AlbumType {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Entity, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Album {
-  pub id: crate::shared::vo::UUID4,
+  id: crate::shared::vo::UUID4,
 
-  pub name: String,
-  pub album_type: AlbumType,
-  pub cover: Option<String>,
-  pub release_date: Option<chrono::NaiveDate>,
-  pub parental_rating: Option<u8>,
-  pub artist_ids: std::collections::HashSet<crate::shared::vo::UUID4>,
+  name: String,
+  album_type: AlbumType,
+  cover: Option<String>,
+  release_date: Option<chrono::NaiveDate>,
+  parental_rating: Option<u8>,
+  artist_ids: std::collections::HashSet<crate::shared::vo::UUID4>,
 
-  pub created_at: chrono::NaiveDateTime,
-  pub updated_at: chrono::NaiveDateTime,
+  created_at: chrono::NaiveDateTime,
+  updated_at: chrono::NaiveDateTime,
 }
 
 impl Album {

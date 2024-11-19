@@ -24,7 +24,7 @@ pub async fn execute(
   album_repository: &mut impl crate::domain::album::repository::AlbumRepository,
   input: Input,
 ) -> Result<crate::domain::activity::Activity, Error> {
-  if !input.actor.is_curator {
+  if !input.actor.is_curator() {
     return Err(Error::UserIsNotACurator);
   }
 
@@ -37,11 +37,11 @@ pub async fn execute(
     activity = activity
       .set_curator_status(
         crate::domain::activity::ActivityStatus::Approved,
-        &input.actor.id,
+        input.actor.id(),
       )
       .map_err(Error::ActivityError)?;
 
-    match &activity.contribuition {
+    match activity.contribution() {
       crate::shared::vo::Contribution::Genre(contribution) => {
         crate::domain::genre::stories::apply_changes::execute(
           genre_repository,

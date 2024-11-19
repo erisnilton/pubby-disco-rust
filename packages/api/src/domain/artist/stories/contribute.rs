@@ -84,12 +84,11 @@ pub async fn execute(
     }
   };
 
-  let activity = crate::domain::activity::Activity {
-    user_id: input.actor_id,
-    contribuition: crate::shared::vo::Contribution::Artist(contribution),
-    status: crate::domain::activity::ActivityStatus::Pending,
-    ..Default::default()
-  };
+  let activity = crate::domain::activity::Activity::builder()
+    .user_id(input.actor_id)
+    .contribution(crate::shared::vo::Contribution::Artist(contribution))
+    .status(crate::domain::activity::ActivityStatus::Pending)
+    .build();
 
   activity_repository
     .create(&activity)

@@ -26,17 +26,17 @@ impl domain::activity::repository::ActivityRepository for SqlxActivityRepository
         "created_at",
         "updated_at"
       ) VALUES ( $1, $2::activity_status, $3, $4, $5, $6)"#,
-      Into::<uuid::Uuid>::into(activity.id.clone()),
-      match &activity.status {
+      Into::<uuid::Uuid>::into(activity.id().clone()),
+      match activity.status() {
         domain::activity::ActivityStatus::Draft => "Draft",
         domain::activity::ActivityStatus::Pending => "Pending",
         domain::activity::ActivityStatus::Approved => "Approved",
         domain::activity::ActivityStatus::Rejected(_) => "Rejected",
       } as _,
-      Into::<uuid::Uuid>::into(activity.user_id.clone()),
-      serde_json::to_value(&activity.contribuition).expect("falha ao serializar contribuição"),
-      activity.created_at,
-      activity.updated_at
+      Into::<uuid::Uuid>::into(activity.user_id().clone()),
+      serde_json::to_value(activity.contribution()).expect("falha ao serializar contribuição"),
+      activity.created_at(),
+      activity.updated_at()
     )
     .execute(&self.db)
     .await
@@ -70,23 +70,25 @@ impl domain::activity::repository::ActivityRepository for SqlxActivityRepository
     .map_err(|err| domain::activity::repository::Error::InternalServerError(err.to_string()))?;
 
     Ok(result.map(|row| {
-      domain::activity::Activity {
-        id: shared::vo::UUID4::new(row.id).unwrap(),
-        status: match row.status.as_str() {
+      domain::activity::Activity::builder()
+        .id(shared::vo::UUID4::new(row.id).unwrap())
+        .status(match row.status.as_str() {
           "Draft" => domain::activity::ActivityStatus::Draft,
           "Pending" => domain::activity::ActivityStatus::Pending,
           "Approved" => domain::activity::ActivityStatus::Approved,
           "Rejected" => domain::activity::ActivityStatus::Rejected(row.reason.unwrap_or_default()),
           value => panic!("status {:?} desconhecido", value),
-        },
-        user_id: shared::vo::UUID4::new(row.user_id).unwrap(),
-        curator_id: row.curator_id.map(|id| shared::vo::UUID4::new(id).unwrap()),
-        revision_date: row.revision_date,
-        contribuition: serde_json::from_value(row.changes.expect("contribuição não encontrada"))
-          .expect("falha ao deserializar contribuição"),
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-      }
+        })
+        .user_id(shared::vo::UUID4::new(row.user_id).unwrap())
+        .curator_id(row.curator_id.map(|id| shared::vo::UUID4::new(id).unwrap()))
+        .revision_date(row.revision_date)
+        .contribution(
+          serde_json::from_value(row.changes.expect("contribuição não encontrada"))
+            .expect("falha ao deserializar contribuição"),
+        )
+        .created_at(row.created_at)
+        .updated_at(row.updated_at)
+        .build()
     }))
   }
 
@@ -104,21 +106,21 @@ impl domain::activity::repository::ActivityRepository for SqlxActivityRepository
             "reason" = $7
 
           WHERE "id" = $1"#,
-      Into::<uuid::Uuid>::into(activity.id.clone()),
-      match &activity.status {
+      Into::<uuid::Uuid>::into(activity.id().clone()),
+      match activity.status() {
         domain::activity::ActivityStatus::Draft => "Draft",
         domain::activity::ActivityStatus::Pending => "Pending",
         domain::activity::ActivityStatus::Approved => "Approved",
         domain::activity::ActivityStatus::Rejected(_) => "Rejected",
       } as _,
       activity
-        .curator_id
+        .curator_id()
         .clone()
         .map(|id| Into::<uuid::Uuid>::into(id)),
-      serde_json::to_value(&activity.contribuition).expect("falha ao serializar contribuição"),
-      activity.revision_date,
-      activity.updated_at,
-      match &activity.status {
+      serde_json::to_value(activity.contribution()).expect("falha ao serializar contribuição"),
+      activity.revision_date().clone(),
+      activity.updated_at(),
+      match activity.status() {
         domain::activity::ActivityStatus::Rejected(reason) => Some(reason.clone()),
         _ => None,
       }
@@ -160,11 +162,11 @@ pub mod tests {
       .expect("falha ao deletar dados antigos");
     }
 
-    let user = domain::user::User {
-      id: shared::vo::UUID4::new(USER_ID).unwrap(),
-      username: String::from("test_criar_uma_activity_user"),
-      ..Default::default()
-    };
+    let user = domain::user::User::builder()
+      .id(shared::vo::UUID4::new(USER_ID).unwrap())
+      .username(String::from("test_criar_uma_activity_user"))
+      .password(String::from("password"))
+      .build();
 
     let app_state = AppState::default().await;
 
@@ -173,22 +175,21 @@ pub mod tests {
     let mut user_repository = infra::sqlx::SqlxUserRepository::new(&app_state);
 
     user_repository
-      .create(user.clone())
+      .create(&user)
       .await
       .expect("falha ao cadastrar usuário");
 
-    let activity = domain::activity::Activity {
-      id: shared::vo::UUID4::new(ACTIVITY_ID).unwrap(),
-      user_id: user.id.clone(),
-      contribuition: shared::vo::Contribution::Genre(
+    let activity = domain::activity::Activity::builder()
+      .id(shared::vo::UUID4::new(ACTIVITY_ID).unwrap())
+      .user_id(user.id().clone())
+      .contribution(shared::vo::Contribution::Genre(
         domain::genre::contribution::Contribution::Create(
           domain::genre::Genre::builder()
             .name(String::from("Forró"))
             .build(),
         ),
-      ),
-      ..Default::default()
-    };
+      ))
+      .build();
 
     let mut activity_repository = infra::sqlx::SqlxActivityRepository::new(&app_state);
 
@@ -198,7 +199,7 @@ pub mod tests {
       .expect("falha ao cadastrar atividade");
 
     let result = activity_repository
-      .find_by_id(&activity.id)
+      .find_by_id(activity.id())
       .await
       .expect("falha ao buscar atividade")
       .expect("atividade não encontrada");
@@ -234,26 +235,24 @@ pub mod tests {
       .expect("falha ao deletar dados antigos");
     }
 
-    let user = domain::user::User {
-      id: shared::vo::UUID4::new(USER_ID).unwrap(),
-      username: String::from("test_buscar_uma_activity_user"),
-      password: String::from("password"),
-      email: String::from("test@test.com"),
-      ..Default::default()
-    };
+    let user = domain::user::User::builder()
+      .id(shared::vo::UUID4::new(USER_ID).unwrap())
+      .username(String::from("test_buscar_uma_activity_user"))
+      .password(String::from("password"))
+      .email(String::from("test@test.com"))
+      .build();
 
-    let activity = domain::activity::Activity {
-      id: shared::vo::UUID4::new(ACTIVITY_ID).unwrap(),
-      user_id: user.id.clone(),
-      contribuition: shared::vo::Contribution::Genre(
+    let activity = domain::activity::Activity::builder()
+      .id(shared::vo::UUID4::new(ACTIVITY_ID).unwrap())
+      .user_id(user.id().clone())
+      .contribution(shared::vo::Contribution::Genre(
         domain::genre::contribution::Contribution::Create(
           domain::genre::Genre::builder()
             .name(String::from("Forró"))
             .build(),
         ),
-      ),
-      ..Default::default()
-    };
+      ))
+      .build();
 
     let app_state = AppState::default().await;
 
@@ -262,7 +261,7 @@ pub mod tests {
     let mut user_repository = infra::sqlx::SqlxUserRepository::new(&app_state);
 
     user_repository
-      .create(user.clone())
+      .create(&user)
       .await
       .expect("falha ao cadastrar usuário");
 
@@ -274,7 +273,7 @@ pub mod tests {
       .expect("falha ao cadastrar atividade");
 
     let result = activity_repository
-      .find_by_id(&activity.id)
+      .find_by_id(activity.id())
       .await
       .expect("falha ao buscar atividade")
       .expect("atividade não encontrada");

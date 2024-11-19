@@ -26,7 +26,7 @@ pub struct PublicActivityPresenter {
   pub user_id: UUID4,
   pub curator_id: Option<UUID4>,
   pub revision_date: Option<chrono::NaiveDate>,
-  pub contribuition: Contribution,
+  pub contribution: Contribution,
   pub created_at: chrono::NaiveDateTime,
   pub updated_at: chrono::NaiveDateTime,
 }
@@ -34,16 +34,16 @@ pub struct PublicActivityPresenter {
 impl From<crate::domain::activity::Activity> for PublicActivityPresenter {
   fn from(value: crate::domain::activity::Activity) -> Self {
     PublicActivityPresenter {
-      id: value.id,
+      id: value.id().clone(),
 
-      status: value.status.into(),
-      user_id: value.user_id,
-      curator_id: value.curator_id,
-      revision_date: value.revision_date.map(|date| date.into()),
-      contribuition: value.contribuition.into(),
+      status: (value.status().clone()).into(),
+      user_id: value.user_id().clone(),
+      curator_id: value.curator_id().clone(),
+      revision_date: value.revision_date().map(|date| date.into()),
+      contribution: value.contribution().clone().into(),
 
-      created_at: value.created_at.into(),
-      updated_at: value.updated_at.into(),
+      created_at: value.created_at().clone(),
+      updated_at: value.updated_at().clone(),
     }
   }
 }

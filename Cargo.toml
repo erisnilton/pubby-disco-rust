@@ -5,17 +5,20 @@ resolver = "2"
 default-members = ["packages/api"]
 
 [profile.release]
-lto = true
-panic = "abort"
-opt-level = "z"
-debug = false
-strip = true
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+incremental = false
 
 [workspace.dependencies]
-chrono = { version = "0.4.38", features = ["serde"] }
+chrono = { version = "0.4.38", features = [
+  "alloc",
+  "std",
+  "clock",
+  "now",
+  "serde",
+] }
 serde = { version = "1.0.213", features = ["derive"] }
 serde_json = { version = "1.0.132", features = ["preserve_order"] }
 tokio = { version = "1.41.0", features = ["full"] }
 uuid = { version = "1.11.0", features = ["v4"] }
-validator = { version = "0.19.0", features = ["derive"] }
-derive_builder = "0.20.2"

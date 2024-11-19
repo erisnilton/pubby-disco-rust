@@ -19,7 +19,7 @@ pub async fn execute(
   activity_repository: &mut impl crate::domain::activity::repository::ActivityRepository,
   input: Input,
 ) -> Result<crate::domain::activity::Activity, Error> {
-  if !input.user.is_curator {
+  if !input.user.is_curator() {
     return Err(Error::UserIsNotACurator);
   }
   let activity = activity_repository
@@ -31,7 +31,7 @@ pub async fn execute(
     let activity = activity
       .set_curator_status(
         crate::domain::activity::ActivityStatus::Rejected(input.reason),
-        &input.user.id,
+        input.user.id(),
       )
       .map_err(Error::ActivityError)?;
 

@@ -18,7 +18,7 @@ impl domain::album::repository::AlbumRepository for InMemoryAlbumRepository {
     &mut self,
     input: &domain::album::Album,
   ) -> Result<domain::album::Album, crate::domain::album::repository::Error> {
-    self.albums.insert(input.id.0.clone(), input.clone());
+    self.albums.insert(input.id().to_string(), input.clone());
     Ok(input.clone())
   }
 
@@ -33,7 +33,7 @@ impl domain::album::repository::AlbumRepository for InMemoryAlbumRepository {
     &mut self,
     album: &domain::album::Album,
   ) -> Result<domain::album::Album, crate::domain::album::repository::Error> {
-    self.albums.insert(album.id.0.clone(), album.clone());
+    self.albums.insert(album.id().to_string(), album.clone());
     Ok(album.clone())
   }
   async fn delete_by_id(

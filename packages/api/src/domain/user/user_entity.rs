@@ -1,15 +1,19 @@
+use domain_proc_macros::Entity;
+
 use crate::shared::util::naive_now;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Entity, Debug, Clone, PartialEq)]
 pub struct User {
-  pub id: crate::shared::vo::UUID4,
-  pub username: String,
-  pub display_name: String,
-  pub email: String,
-  pub password: String,
-  pub is_curator: bool,
-  pub created_at: chrono::NaiveDateTime,
-  pub updated_at: chrono::NaiveDateTime,
+  id: crate::shared::vo::UUID4,
+
+  username: String,
+  display_name: String,
+  email: String,
+  password: String,
+  is_curator: bool,
+
+  created_at: chrono::NaiveDateTime,
+  updated_at: chrono::NaiveDateTime,
 }
 
 impl Default for User {

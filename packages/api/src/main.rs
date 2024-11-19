@@ -11,8 +11,8 @@ use actix_web::{
   App, HttpServer,
 };
 
+use api::{infra, AppState};
 use base64::Engine;
-use rust::{infra, AppState};
 use serde_json::json;
 
 use actix_web::middleware::Logger;

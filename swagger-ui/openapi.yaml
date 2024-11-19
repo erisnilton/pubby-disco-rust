@@ -3,8 +3,61 @@ openapi: 3.1.0
 info:
   title: Pubby Disco API
   version: 0.1.0
+
 components:
   schemas:
+    EntityBase:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    BadRequestError:
+      type: object
+      properties:
+        name:
+          type: string
+          const: "BadRequest"
+        message:
+          type: string
+          enum:
+            - Invalid JSON
+        details:
+          type: string
+    
+    ForbiddenError:
+      type: object
+      properties:
+        name:
+          type: string
+          const: "Forbidden"
+        message:
+          type: string
+
+    InternalServerError:
+      type: object
+      properties:
+        name:
+          type: string
+          const: InternalServerError
+        message:
+          type: string
+
+    NotFoundError:
+      type: object
+      properties:
+        name:
+          type: string
+          const: NotFound
+        message:
+          type: string
+    
     CreateGenreDTO:
       type: object
       required:
@@ -12,9 +65,74 @@ components:
       properties:
         name:
           type: string
-
+          example: "Rock"
+        slug:
+          type: string
+          example: "rock"
         parent_id:
           type: string
+          format: uuid
+    
+    UpdateGenreDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Samba"
+        slug:
+          type: string
+          example: "samba"
+        parent_id:
+          type: string
+          format: uuid
+
+    GenreDTO:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/EntityBase'
+      properties:
+        name:
+          type: string
+          example: "Rock"
+        slug:
+          type: string
+          example: "rock"
+        parent_id:
+          type: string
+          format: uuid
+
+    CreateArtistDTO:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Anitta"
+        slug:
+          type: string
+          example: "anitta"
+    UpdateArtistDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Anitta"
+        slug:
+          type: string
+          example: "anitta"
+
+    ArtistDTO:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/EntityBase'
+      properties:
+        name:
+          type: string
+          example: "Anitta"
+        slug:
+          type: string
+          example: "anitta"
 paths:
   "/login":
     post:
@@ -33,3 +151,239 @@ paths:
                   type: string
                 password:
                   type: string
+
+  "/contribute/genres":
+    post:
+      operationId: contributeCreateGenre
+      summary: Cria uma nova atividade pedindo a criação de um novo gênero
+      tags:
+        - Genre
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGenreDTO'
+      responses:
+        '201':
+          description: Atividade criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenreDTO'
+        '400':
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+  "/contribute/genres/{id}":
+    patch:
+      operationId: contributeUpdateGenre
+      summary: Cria uma nova atividade pedindo a atualização de um gênero
+      tags:
+        - Genre
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGenreDTO'
+      responses:
+        '200':
+          description: Atividade criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenreDTO'
+        '400':
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+    delete:
+      operationId: contributeDeleteGenre
+      summary: Cria uma nova atividade pedindo a exclusão de um gênero
+      tags:
+        - Genre
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Atividade criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenreDTO'
+        '400':
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+
+  "/contribute/artist":
+    post:
+      operationId: contributeCreateArtist
+      summary: Cria uma nova atividade pedindo a criação de um novo artista
+      tags:
+        - Artist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateArtistDTO'
+      responses:
+        '201':
+          description: Atividade criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtistDTO'
+        '400':
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+  "/contribute/artist/{id}":
+    patch:
+      operationId: contributeUpdateArtist
+      summary: Cria uma nova atividade pedindo a atualização de um artista
+      tags:
+        - Artist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateArtistDTO'
+      responses:
+        '200':
+          description: Atividade criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtistDTO'
+        '400':
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+    delete:
+      operationId: contributeDeleteArtist
+      summary: Cria uma nova atividade pedindo a exclusão de um artista
+      tags:
+        - Artist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Atividade criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtistDTO'
+        '400':
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerError'
+
+  "/c"

@@ -10,15 +10,14 @@ pub struct CreateInput {
 
 impl From<CreateInput> for crate::domain::album::Album {
   fn from(value: CreateInput) -> Self {
-    Self {
-      name: value.name.clone(),
-      cover: value.cover.clone(),
-      album_type: value.album_type,
-      release_date: value.release_date,
-      parental_rating: value.parental_rating,
-      artist_ids: value.artist_ids.clone(),
-      ..Default::default()
-    }
+    Self::builder()
+      .name(value.name)
+      .cover(value.cover)
+      .album_type(value.album_type)
+      .release_date(value.release_date)
+      .parental_rating(value.parental_rating)
+      .artist_ids(value.artist_ids)
+      .build()
   }
 }
 
@@ -86,12 +85,11 @@ pub async fn execute(
     }
   };
 
-  let activity = crate::domain::activity::Activity {
-    user_id: input.actor_id,
-    contribuition: crate::shared::vo::Contribution::Album(contribution),
-    status: crate::domain::activity::ActivityStatus::Pending,
-    ..Default::default()
-  };
+  let activity = crate::domain::activity::Activity::builder()
+    .user_id(input.actor_id)
+    .contribution(crate::shared::vo::Contribution::Album(contribution))
+    .status(crate::domain::activity::ActivityStatus::Pending)
+    .build();
 
   activity_repository
     .create(&activity)

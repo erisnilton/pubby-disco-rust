@@ -115,7 +115,7 @@ impl GenreRepository for SqlxGenreRepository {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{shared::vo::Slug, AppState};
+  use crate::{domain::genre::GenreBuilder, shared::vo::Slug, AppState};
 
   #[tokio::test]
   async fn test_create() {
@@ -193,7 +193,7 @@ mod tests {
 
     repository_genre.create(genre.clone()).await.unwrap();
 
-    let genre = Genre::builder()
+    let genre = GenreBuilder::from(genre)
       .name(String::from("Test 2"))
       .slug(Slug::new("test_update_genre2").unwrap())
       .build();

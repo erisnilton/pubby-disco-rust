@@ -11,7 +11,7 @@ pub enum UserRepositoryError {
 }
 
 pub trait UserRepository {
-  fn create(&mut self, user: User) -> impl Future<Output = Result<User, UserRepositoryError>>;
+  fn create(&mut self, user: &User) -> impl Future<Output = Result<User, UserRepositoryError>>;
 
   fn find_by_username(
     &mut self,

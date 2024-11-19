@@ -36,7 +36,7 @@ pub async fn register_user(
     .await
     {
       Ok(user) => {
-        session.insert("user_id", user.id.to_string()).ok();
+        session.insert("user_id", user.id().to_string()).ok();
         actix_web::HttpResponse::Ok()
           .json(Into::<super::presenters::PublicUserPresenter>::into(user))
       }
@@ -57,7 +57,7 @@ pub async fn user_login(
 
   match result {
     Ok(user) => {
-      session.insert("user_id", user.id.to_string()).ok();
+      session.insert("user_id", user.id().to_string()).ok();
       actix_web::HttpResponse::Ok().json(Into::<super::presenters::PublicUserPresenter>::into(user))
     }
     Err(user_login::LoginError::InvalidCredentials) => actix_web::HttpResponse::Unauthorized()

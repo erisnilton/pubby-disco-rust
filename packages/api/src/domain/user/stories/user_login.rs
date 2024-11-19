@@ -32,7 +32,7 @@ pub async fn execute(
   let user = user_repository.find_by_username(input.username).await?;
 
   if let Some(user) = user {
-    if password_hash.verify_password(&input.password, &user.password) {
+    if password_hash.verify_password(&input.password, user.password()) {
       return Ok(user);
     }
   }
@@ -42,6 +42,7 @@ pub async fn execute(
 
 #[cfg(test)]
 mod test {
+  use crate::domain;
   use crate::domain::user::stories::user_login;
   use crate::infra::bcrypt::BcryptPasswordHash;
 
@@ -51,28 +52,29 @@ mod test {
   async fn test_should_login() {
     let mut user_repository = crate::infra::in_memory::InMemoryUserRepository::default();
     let password_hash = BcryptPasswordHash;
-    let user = User {
-      username: "test".to_string(),
-      password: password_hash.hash_password("password"),
-      email: "test@email.com".to_string(),
-      display_name: String::new(),
-      ..Default::default()
-    };
+    let user = domain::user::User::builder()
+      .username("test".to_string())
+      .password(password_hash.hash_password("password"))
+      .email(String::from("test@email.com"))
+      .build();
 
-    user_repository.create(user.clone()).await.unwrap();
+    user_repository.create(&user).await.unwrap();
 
     let result = user_login::execute(
       &mut user_repository,
       &password_hash,
       user_login::Input {
-        username: user.username.clone(),
+        username: user.username().clone(),
         password: "password".to_string(),
       },
     )
-    .await;
+    .await
+    .expect("Falha ao logar");
 
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap().id, user.id);
+    assert_eq!(
+      result, user,
+      "O usuário retornado não é o mesmo que foi criado"
+    );
   }
 
   #[tokio::test]
@@ -80,15 +82,13 @@ mod test {
     let mut user_repository = crate::infra::in_memory::InMemoryUserRepository::default();
     let password_hash = BcryptPasswordHash;
 
-    let user = User {
-      username: "test".to_string(),
-      password: password_hash.hash_password("password"),
-      email: "test@email.com".to_string(),
-      display_name: String::new(),
-      ..Default::default()
-    };
+    let user = domain::user::User::builder()
+      .username("test".to_string())
+      .password(password_hash.hash_password("password"))
+      .email(String::from("test@email.com"))
+      .build();
 
-    user_repository.create(user.clone()).await.unwrap();
+    user_repository.create(&user).await.unwrap();
 
     let credentials = vec![
       ("test_invalid", "password_invalid"),

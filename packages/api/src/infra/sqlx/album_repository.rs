@@ -29,26 +29,26 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
       INSERT INTO "album" ("id", "name", "album_type", "cover", "release_date", "parental_rating", "created_at", "updated_at")
       VALUES ($1, $2, $3::album_type, $4, $5, $6, $7, $8)
       "#,
-      Into::<uuid::Uuid>::into(album.id.clone()),
-      album.name,
-      album.album_type.to_string() as _,
-      album.cover,
-      album.release_date,
-      album.parental_rating.map(i16::from),
-      album.created_at,
-      album.updated_at
+      Into::<uuid::Uuid>::into(album.id().clone()),
+      album.name(),
+      album.album_type().to_string() as _,
+      album.cover().clone(),
+      album.release_date().clone(),
+      album.parental_rating().map(i16::from),
+      album.created_at(),
+      album.updated_at()
     )
     .execute(&mut *trx)
     .await
     .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))?;
 
-    for artist_id in album.artist_ids.iter() {
+    for artist_id in album.artist_ids().iter() {
       sqlx::query!(
         r#"
         INSERT INTO album_artist (album_id, artist_id)
         VALUES ($1, $2)
         "#,
-        Into::<uuid::Uuid>::into(album.id.clone()),
+        Into::<uuid::Uuid>::into(album.id().clone()),
         Into::<uuid::Uuid>::into(artist_id.clone())
       )
       .execute(&mut *trx)
@@ -80,12 +80,12 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
       SET "name" = $2, "cover" = $3, "release_date" = $4, "parental_rating" = $5, "updated_at" = $6
       WHERE "id" = $1
       "#,
-      Into::<uuid::Uuid>::into(album.id.clone()),
-      album.name,
-      album.cover,
-      album.release_date,
-      album.parental_rating.map(i16::from),
-      album.updated_at
+      Into::<uuid::Uuid>::into(album.id().clone()),
+      album.name(),
+      album.cover().clone(),
+      album.release_date().clone(),
+      album.parental_rating().map(i16::from),
+      album.updated_at()
     )
     .execute(&mut *trx)
     .await
@@ -96,7 +96,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
         r#"
           SELECT "artist_id" FROM "album_artist" WHERE "album_id" = $1 
         "#,
-        Into::<uuid::Uuid>::into(album.id.clone())
+        Into::<uuid::Uuid>::into(album.id().clone())
       )
       .fetch_all(&mut *trx)
       .await
@@ -112,7 +112,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
       let mut to_delete: HashSet<uuid::Uuid> = HashSet::new();
       let mut to_insert: HashSet<uuid::Uuid> = HashSet::new();
       let all_artist = album
-        .artist_ids
+        .artist_ids()
         .clone()
         .into_iter()
         .chain(old_artist.clone())
@@ -123,7 +123,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
           to_insert.insert(artist_id.into());
           continue;
         }
-        if !album.artist_ids.contains(&artist_id) {
+        if !album.artist_ids().contains(&artist_id) {
           to_delete.insert(artist_id.into());
           continue;
         }
@@ -175,7 +175,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
       );
 
       let query = {
-        let mut query = sqlx::query(&sql).bind(Into::<uuid::Uuid>::into(album.id.clone()));
+        let mut query = sqlx::query(&sql).bind(Into::<uuid::Uuid>::into(album.id().clone()));
 
         for value in to_insert_artist.into_iter() {
           query = query.bind(value);
@@ -237,17 +237,19 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
         .collect::<HashSet<shared::vo::UUID4>>()
     };
 
-    Ok(Some(domain::album::Album {
-      id: shared::vo::UUID4::new(result.id).unwrap(),
-      artist_ids: artists_id,
-      album_type: result.album_type.parse().unwrap(),
-      cover: result.cover,
-      name: result.name,
-      parental_rating: result.parental_rating.map(|value| value as u8),
-      release_date: result.release_date,
-      created_at: result.created_at,
-      updated_at: result.updated_at,
-    }))
+    Ok(Some(
+      domain::album::Album::builder()
+        .id(shared::vo::UUID4::new(result.id).unwrap())
+        .name(result.name)
+        .album_type(result.album_type.parse().unwrap())
+        .cover(result.cover)
+        .parental_rating(result.parental_rating.map(|value| value as u8))
+        .release_date(result.release_date)
+        .created_at(result.created_at)
+        .updated_at(result.updated_at)
+        .artist_ids(artists_id)
+        .build(),
+    ))
   }
 
   async fn delete_by_id(
@@ -350,16 +352,15 @@ mod tests {
       .await
       .expect("Erro ao criar artista");
 
-    let album = domain::album::Album {
-      id: shared::vo::UUID4::new("09c227b6-7498-4f63-b17c-11b7fe4e9c77").unwrap(),
-      name: "test_album".to_string(),
-      artist_ids: {
+    let album = domain::album::Album::builder()
+      .id(shared::vo::UUID4::new("09c227b6-7498-4f63-b17c-11b7fe4e9c77").unwrap())
+      .name(String::from("test_album"))
+      .artist_ids({
         let mut set = HashSet::new();
         set.insert(artist.id.clone());
         set
-      },
-      ..Default::default()
-    };
+      })
+      .build();
 
     let result = album_repository
       .create(&album)
@@ -408,24 +409,22 @@ mod tests {
 
     let mut album_repository = SqlxAlbumRepository::new(&app_state);
 
-    let album = domain::album::Album {
-      id: shared::vo::UUID4::new(ALBUM_ID).unwrap(),
-      name: "test_album".to_string(),
-      ..Default::default()
-    };
+    let album = domain::album::Album::builder()
+      .id(shared::vo::UUID4::new(ALBUM_ID).unwrap())
+      .name(String::from("test_album"))
+      .build();
 
     album_repository
       .create(&album)
       .await
       .expect("Erro ao criar album");
 
-    let album = domain::album::Album {
-      name: "test_album_updated".to_string(),
-      cover: Some("test_cover".to_string()),
-      parental_rating: Some(16),
-      release_date: chrono::NaiveDate::from_ymd_opt(2021, 1, 1),
-      ..album
-    };
+    let album = domain::album::AlbumBuilder::from(album)
+      .name(String::from("test_album_updated"))
+      .cover(Some(String::from("test_cover")))
+      .parental_rating(Some(16))
+      .release_date(chrono::NaiveDate::from_ymd_opt(2021, 1, 1))
+      .build();
 
     album_repository
       .update(&album)
@@ -433,7 +432,7 @@ mod tests {
       .expect("Erro ao atualizar album");
 
     let result = album_repository
-      .find_by_id(&album.id)
+      .find_by_id(album.id())
       .await
       .expect("Erro ao buscar album")
       .expect("Album não encontrado");
@@ -489,11 +488,10 @@ mod tests {
     let mut artist_repository = infra::sqlx::SqlxArtistRepository::new(&app_state);
     let mut album_repository = SqlxAlbumRepository::new(&app_state);
 
-    let mut album = domain::album::Album {
-      id: shared::vo::UUID4::new(ALBUM_ID).unwrap(),
-      name: "test_update_album_set_artist".to_string(),
-      ..Default::default()
-    };
+    let mut album = domain::album::Album::builder()
+      .id(shared::vo::UUID4::new(ALBUM_ID).unwrap())
+      .name("test_album".to_string())
+      .build();
 
     album_repository
       .create(&album)
@@ -512,7 +510,7 @@ mod tests {
       .await
       .expect("Erro ao criar artista");
 
-    album.artist_ids.insert(artist.id.clone());
+    album.artist_ids_mut().insert(artist.id.clone());
 
     album_repository
       .update(&album)
@@ -520,7 +518,7 @@ mod tests {
       .expect("Erro ao atualizar album");
 
     let result = album_repository
-      .find_by_id(&album.id)
+      .find_by_id(album.id())
       .await
       .expect("Erro ao buscar album")
       .expect("Album não encontrado");
@@ -588,23 +586,22 @@ mod tests {
       .await
       .expect("Erro ao criar artista");
 
-    let mut album = domain::album::Album {
-      id: shared::vo::UUID4::new(ALBUM_ID).unwrap(),
-      name: "test_album".to_string(),
-      artist_ids: {
+    let mut album = domain::album::Album::builder()
+      .id(shared::vo::UUID4::new(ALBUM_ID).unwrap())
+      .name("test_album".to_string())
+      .artist_ids({
         let mut set = HashSet::new();
         set.insert(artist.id.clone());
         set
-      },
-      ..Default::default()
-    };
+      })
+      .build();
 
     album_repository
       .create(&album)
       .await
       .expect("Erro ao criar album");
 
-    album.artist_ids.clear();
+    album.artist_ids_mut().clear();
 
     album_repository
       .update(&album)
@@ -612,7 +609,7 @@ mod tests {
       .expect("Erro ao atualizar album");
 
     let result = album_repository
-      .find_by_id(&album.id)
+      .find_by_id(album.id())
       .await
       .expect("Erro ao buscar album")
       .expect("Album não encontrado");
@@ -694,24 +691,25 @@ mod tests {
       .await
       .expect("Erro ao criar artista");
 
-    let mut album = domain::album::Album {
-      id: shared::vo::UUID4::new(ALBUM_ID).unwrap(),
-      name: "test_album".to_string(),
-      artist_ids: {
+    let mut album = domain::album::Album::builder()
+      .id(shared::vo::UUID4::new(ALBUM_ID).unwrap())
+      .name("test_album".to_string())
+      .artist_ids({
         let mut set = HashSet::new();
         set.insert(artist.id.clone());
         set
-      },
-      ..Default::default()
-    };
+      })
+      .build();
 
     album_repository
       .create(&album)
       .await
       .expect("Erro ao criar album");
 
-    album.artist_ids.clear();
-    album.artist_ids.insert(artist_2.id.clone());
+    let artists_ids = album.artist_ids_mut();
+
+    artists_ids.clear();
+    artists_ids.insert(artist_2.id.clone());
 
     album_repository
       .update(&album)
@@ -719,7 +717,7 @@ mod tests {
       .expect("Erro ao atualizar album");
 
     let result = album_repository
-      .find_by_id(&album.id)
+      .find_by_id(album.id())
       .await
       .expect("Erro ao buscar album")
       .expect("Album não encontrado");
@@ -802,23 +800,22 @@ mod tests {
       .await
       .expect("Erro ao criar artista");
 
-    let mut album = domain::album::Album {
-      id: shared::vo::UUID4::new(ALBUM_ID).unwrap(),
-      name: "test_album".to_string(),
-      artist_ids: {
+    let mut album = domain::album::Album::builder()
+      .id(shared::vo::UUID4::new(ALBUM_ID).unwrap())
+      .name("test_album".to_string())
+      .artist_ids({
         let mut set = HashSet::new();
         set.insert(artist.id.clone());
         set
-      },
-      ..Default::default()
-    };
+      })
+      .build();
 
     album_repository
       .create(&album)
       .await
       .expect("Erro ao criar album");
 
-    album.artist_ids.insert(artist_2.id.clone());
+    album.artist_ids_mut().insert(artist_2.id.clone());
 
     album_repository
       .update(&album)
@@ -826,7 +823,7 @@ mod tests {
       .expect("Erro ao atualizar album");
 
     let result = album_repository
-      .find_by_id(&album.id)
+      .find_by_id(album.id())
       .await
       .expect("Erro ao buscar album")
       .expect("Album não encontrado");
@@ -907,23 +904,23 @@ mod tests {
       .await
       .expect("Erro ao criar artista");
 
-    let mut album = domain::album::Album {
-      id: shared::vo::UUID4::new(ALBUM_ID).unwrap(),
-      name: "test_album".to_string(),
-      artist_ids: {
+    let mut album = domain::album::Album::builder()
+      .id(shared::vo::UUID4::new(ALBUM_ID).unwrap())
+      .name("test_album".to_string())
+      .artist_ids({
         let mut set = HashSet::new();
         set.insert(artist.id.clone());
         set.insert(artist_2.id.clone());
         set
-      },
-      ..Default::default()
-    };
+      })
+      .build();
+
     album_repository
       .create(&album)
       .await
       .expect("Erro ao criar album");
 
-    album.artist_ids.remove(&artist_2.id);
+    album.artist_ids_mut().remove(&artist_2.id);
 
     album_repository
       .update(&album)
@@ -931,7 +928,7 @@ mod tests {
       .expect("Erro ao atualizar album");
 
     let result = album_repository
-      .find_by_id(&album.id)
+      .find_by_id(album.id())
       .await
       .expect("Erro ao buscar album")
       .expect("Album não encontrado");
@@ -976,11 +973,10 @@ mod tests {
 
     let mut album_repository = SqlxAlbumRepository::new(&app_state);
 
-    let album = domain::album::Album {
-      id: shared::vo::UUID4::new(ALBUM_ID).unwrap(),
-      name: "test_album".to_string(),
-      ..Default::default()
-    };
+    let album = domain::album::Album::builder()
+      .id(shared::vo::UUID4::new(ALBUM_ID).unwrap())
+      .name("test_album".to_string())
+      .build();
 
     album_repository
       .create(&album)
@@ -988,12 +984,12 @@ mod tests {
       .expect("Erro ao criar album");
 
     album_repository
-      .delete_by_id(&album.id)
+      .delete_by_id(album.id())
       .await
       .expect("Erro ao excluir album");
 
     let result = album_repository
-      .find_by_id(&album.id)
+      .find_by_id(album.id())
       .await
       .expect("Erro ao buscar album");
 
@@ -1037,11 +1033,10 @@ mod tests {
 
     let mut album_repository = SqlxAlbumRepository::new(&app_state);
 
-    let album = domain::album::Album {
-      id: shared::vo::UUID4::new(ALBUM_ID).unwrap(),
-      name: "test_album".to_string(),
-      ..Default::default()
-    };
+    let album = domain::album::Album::builder()
+      .id(shared::vo::UUID4::new(ALBUM_ID).unwrap())
+      .name("test_album".to_string())
+      .build();
 
     album_repository
       .create(&album)
@@ -1049,7 +1044,7 @@ mod tests {
       .expect("Erro ao criar album");
 
     let result = album_repository
-      .find_by_id(&album.id)
+      .find_by_id(album.id())
       .await
       .expect("Erro ao buscar album")
       .expect("Album não encontrado");

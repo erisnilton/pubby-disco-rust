@@ -29,7 +29,7 @@ pub async fn execute(
     }
     crate::domain::album::contribution::Contribution::Delete(album) => {
       album_repository
-        .delete_by_id(&album.id)
+        .delete_by_id(album.id())
         .await
         .map_err(Error::RepositoryError)?;
     }

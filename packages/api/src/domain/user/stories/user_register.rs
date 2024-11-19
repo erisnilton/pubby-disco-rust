@@ -54,16 +54,14 @@ pub async fn execute(
   if user_exists {
     return Err(CreateUserStoryError::UserAlreadyExists);
   }
+  let user = User::builder()
+    .username(input.username.clone())
+    .password(password_hash.hash_password(&input.password))
+    .email(input.email.clone())
+    .display_name(input.display_name.clone().unwrap_or_default())
+    .build();
 
-  let user = user_repository
-    .create(User {
-      username: input.username.clone(),
-      password: password_hash.hash_password(&input.password),
-      email: input.email,
-      display_name: input.display_name.unwrap_or_default(),
-      ..Default::default()
-    })
-    .await?;
+  user_repository.create(&user).await?;
 
   Ok(user)
 }
@@ -86,16 +84,14 @@ mod test {
       display_name: None,
     };
 
-    user_repository
-      .create(User {
-        username: input.username.clone(),
-        password: input.password.clone(),
-        email: input.email.clone(),
-        display_name: input.display_name.clone().unwrap_or_default(),
-        ..Default::default()
-      })
-      .await
-      .unwrap();
+    let user = User::builder()
+      .username(input.username.clone())
+      .password(password_hash.hash_password(&input.password))
+      .email(input.email.clone())
+      .display_name(input.display_name.clone().unwrap_or_default())
+      .build();
+
+    user_repository.create(&user).await.unwrap();
 
     let result = crate::domain::user::stories::user_register::execute(
       &mut user_repository,
@@ -104,10 +100,10 @@ mod test {
     )
     .await;
 
-    assert!(matches!(
-      result,
-      Err(CreateUserStoryError::UserAlreadyExists)
-    ));
+    assert!(
+      matches!(result, Err(CreateUserStoryError::UserAlreadyExists)),
+      "Não foi retornado o erro de usuário já existente"
+    );
   }
 
   #[tokio::test]
@@ -127,8 +123,9 @@ mod test {
       &password_hash,
       input.clone(),
     )
-    .await;
+    .await
+    .expect("Erro ao cadastrar usuário");
 
-    assert!(matches!(result, Ok(user) if user.username == input.username));
+    assert_eq!(result.username(), &input.username);
   }
 }

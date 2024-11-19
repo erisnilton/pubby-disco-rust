@@ -1,3 +1,5 @@
+use domain_proc_macros::Entity;
+
 use crate::shared::{self, util::naive_now};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -13,18 +15,18 @@ pub enum Error {
   ActivityIsNotPending,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Entity, Debug, Clone, PartialEq)]
 pub struct Activity {
-  pub id: crate::shared::vo::UUID4,
+  id: crate::shared::vo::UUID4,
 
-  pub status: ActivityStatus,
-  pub user_id: crate::shared::vo::UUID4,
-  pub curator_id: Option<crate::shared::vo::UUID4>,
-  pub revision_date: Option<chrono::NaiveDateTime>,
-  pub contribuition: shared::vo::Contribution,
+  status: ActivityStatus,
+  user_id: crate::shared::vo::UUID4,
+  curator_id: Option<crate::shared::vo::UUID4>,
+  revision_date: Option<chrono::NaiveDateTime>,
+  contribution: shared::vo::Contribution,
 
-  pub created_at: chrono::NaiveDateTime,
-  pub updated_at: chrono::NaiveDateTime,
+  created_at: chrono::NaiveDateTime,
+  updated_at: chrono::NaiveDateTime,
 }
 
 impl Activity {
@@ -40,6 +42,7 @@ impl Activity {
     self.status = status;
     self.curator_id = Some(curator_id.clone());
     self.revision_date = Some(naive_now());
+    self.updated_at = naive_now();
 
     Ok(self)
   }
@@ -54,7 +57,7 @@ impl Default for Activity {
       user_id: crate::shared::vo::UUID4::default(),
       status: ActivityStatus::Pending,
       curator_id: None,
-      contribuition: crate::shared::vo::Contribution::default(),
+      contribution: crate::shared::vo::Contribution::default(),
       revision_date: None,
       created_at: now,
       updated_at: now,

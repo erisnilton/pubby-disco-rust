@@ -2,6 +2,7 @@ use uuid::Uuid;
 
 use crate::{
   domain::user::{User, UserRepository, UserRepositoryError},
+  shared::{util::trim_datetime, vo::UUID4},
   AppState,
 };
 
@@ -17,7 +18,7 @@ impl SqlxUserRepository {
   }
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(Debug, sqlx::FromRow)]
 struct UserRecord {
   id: Uuid,
   username: String,
@@ -32,37 +33,37 @@ struct UserRecord {
 impl From<User> for UserRecord {
   fn from(val: User) -> Self {
     UserRecord {
-      id: Uuid::parse_str(&val.id.0).unwrap(),
-      username: val.username,
-      password: val.password,
-      email: val.email,
-      is_curator: val.is_curator,
-      display_name: val.display_name,
-      created_at: val.created_at,
-      updated_at: val.updated_at,
+      id: Uuid::parse_str(&val.id().to_string()).unwrap(),
+      username: val.username().clone(),
+      password: val.password().clone(),
+      email: val.email().clone(),
+      is_curator: *val.is_curator(),
+      display_name: val.display_name().clone(),
+      created_at: trim_datetime(*val.created_at()),
+      updated_at: trim_datetime(*val.updated_at()),
     }
   }
 }
 
 impl From<UserRecord> for User {
   fn from(val: UserRecord) -> Self {
-    User {
-      id: crate::shared::vo::UUID4(val.id.to_string()),
-      username: val.username,
-      password: val.password,
-      email: val.email,
-      is_curator: val.is_curator,
-      display_name: val.display_name,
-      created_at: val.created_at,
-      updated_at: val.updated_at,
-    }
+    User::builder()
+      .id(UUID4::new(val.id.to_string()).unwrap())
+      .username(val.username)
+      .password(val.password)
+      .email(val.email)
+      .display_name(val.display_name)
+      .is_curator(val.is_curator)
+      .created_at(trim_datetime(val.created_at))
+      .updated_at(trim_datetime(val.updated_at))
+      .build()
   }
 }
 
 impl UserRepository for SqlxUserRepository {
   async fn create(
     &mut self,
-    user: crate::domain::user::User,
+    user: &crate::domain::user::User,
   ) -> Result<crate::domain::user::User, crate::domain::user::UserRepositoryError> {
     let user_record: UserRecord = user.clone().into();
 
@@ -81,7 +82,7 @@ impl UserRepository for SqlxUserRepository {
     .await
     .map_err(|e| UserRepositoryError::InternalServerError(e.to_string()))?;
 
-    Ok(user)
+    Ok(user.clone())
   }
 
   async fn find_by_username(
@@ -98,6 +99,8 @@ impl UserRepository for SqlxUserRepository {
     .fetch_optional(&self.pool)
     .await
     .map_err(|e| UserRepositoryError::InternalServerError(e.to_string()))?;
+
+    println!("=================================== {:?}", user_record);
 
     Ok(user_record.map(|record| record.into()))
   }
@@ -158,23 +161,22 @@ mod tests {
     let email = String::from(TEST_EMAIL);
     let display_name = String::from("Test User");
 
-    let user = user_repository
-      .create(User {
-        id: UUID4::new("6f76b734-61f7-4613-bdfc-de5064d9fdb1").unwrap_or_default(),
-        username: username.clone(),
-        password: password.clone(),
-        email: email.clone(),
-        display_name: display_name.clone(),
-        ..Default::default()
-      })
-      .await
-      .unwrap();
+    let user = User::builder()
+      .id(UUID4::new("6f76b734-61f7-4613-bdfc-de5064d9fdb1").unwrap())
+      .username(username.clone())
+      .password(password.clone())
+      .email(email.clone())
+      .display_name(display_name.clone())
+      .build();
+
+    let user2 = user_repository.create(&user).await.unwrap();
 
     delete_old_data().await;
 
-    assert_eq!(user.username, username);
-    assert_eq!(user.email, email);
-    assert_eq!(user.display_name, display_name);
+    assert_eq!(
+      user, user2,
+      "O usuário retornado não é o mesmo que foi criado"
+    );
   }
 
   #[tokio::test]
@@ -204,32 +206,28 @@ mod tests {
 
     let display_name = String::from("Test User");
 
-    let user = User {
-      id: UUID4::new("4661a178-a2ec-4183-ae5f-aa4572860202").unwrap_or_default(),
-      username: String::from("should_find_user_by_username"),
-      password: String::from("test"),
-      email: String::from(TEST_EMAIL),
-      display_name: display_name.clone(),
-      ..Default::default()
-    };
+    let user = User::builder()
+      .id(UUID4::new("4661a178-a2ec-4183-ae5f-aa4572860202").unwrap())
+      .username(String::from("should_find_user_by_username"))
+      .password(String::from("test"))
+      .email(String::from(TEST_EMAIL))
+      .display_name(display_name.clone())
+      .build();
 
-    user_repository.create(user.clone()).await.unwrap();
+    user_repository.create(&user).await.unwrap();
 
     let result = user_repository
-      .find_by_username(user.username.clone())
+      .find_by_username(user.username())
       .await
-      .unwrap();
+      .expect("Erro ao buscar usuário por username")
+      .expect("Usuário não encontrado");
 
     delete_old_data().await;
 
-    assert!(result.is_some(), "User not found");
-
-    let result = result.unwrap();
-
-    assert_eq!(user.id, result.id);
-    assert_eq!(user.username, result.username);
-    assert_eq!(user.email, result.email);
-    assert_eq!(user.display_name, result.display_name);
+    assert_eq!(
+      user, result,
+      "Usuário retornado não é o mesmo que foi criado"
+    );
   }
 
   #[tokio::test]
