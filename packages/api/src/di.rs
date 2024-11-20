@@ -27,3 +27,9 @@ pub mod album {
     pub use crate::infra::sqlx::SqlxAlbumRepository as AlbumRepository;
   }
 }
+
+pub mod media {
+  pub mod repositories {
+    pub use crate::infra::sqlx::SqlxMediaRepository as MediaRepository;
+  }
+}

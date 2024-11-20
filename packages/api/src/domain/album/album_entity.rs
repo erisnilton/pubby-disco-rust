@@ -45,7 +45,7 @@ pub struct Album {
   album_type: AlbumType,
   cover: Option<String>,
   release_date: Option<chrono::NaiveDate>,
-  parental_rating: Option<u8>,
+  parental_rating: u8,
   artist_ids: std::collections::HashSet<crate::shared::vo::UUID4>,
 
   created_at: chrono::NaiveDateTime,
@@ -71,7 +71,7 @@ impl Album {
     }
 
     if let Some(value) = changes.parental_rating {
-      self.parental_rating = Some(value);
+      self.parental_rating = value;
     }
 
     if let Some(value) = &changes.artist_ids {
@@ -92,7 +92,7 @@ impl Default for Album {
       album_type: AlbumType::Album,
       cover: Some(String::new()),
       release_date: None,
-      parental_rating: None,
+      parental_rating: 0,
       artist_ids: std::collections::HashSet::new(),
       created_at: now,
       updated_at: now,

@@ -13,7 +13,7 @@ CREATE TABLE "album" (
     "album_type" "album_type" NOT NULL DEFAULT 'Album',
     "cover" VARCHAR(255),
     "release_date" DATE,
-    "parental_rating" SMALLINT,
+    "parental_rating" SMALLINT NOT NULL DEFAULT 0,
     
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL

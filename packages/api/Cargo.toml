@@ -31,11 +31,7 @@ sqlx = { version = "0.8.2", default-features = false, features = [
   "tls-native-tls",
   "json",
 ] }
-tokio = { workspace = true, default-features = false, features = [
-  "rt-multi-thread",
-  "macros",
-  "test-util",
-] }
+tokio = { workspace = true }
 unidecode = "0.3.0"
 uuid = { workspace = true }
 validator = { version = "0.19.0", features = ["derive"] }

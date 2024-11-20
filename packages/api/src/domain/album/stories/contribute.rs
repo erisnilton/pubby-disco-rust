@@ -15,7 +15,7 @@ impl From<CreateInput> for crate::domain::album::Album {
       .cover(value.cover)
       .album_type(value.album_type)
       .release_date(value.release_date)
-      .parental_rating(value.parental_rating)
+      .parental_rating(value.parental_rating.unwrap_or_default())
       .artist_ids(value.artist_ids)
       .build()
   }

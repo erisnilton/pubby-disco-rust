@@ -25,6 +25,8 @@ impl Artist {
     if let Some(value) = &changes.country {
       self.country = Some(value.clone());
     }
+
+    self.updated_at = naive_now();
   }
 }
 

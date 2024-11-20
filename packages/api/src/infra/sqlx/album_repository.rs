@@ -34,7 +34,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
       album.album_type().to_string() as _,
       album.cover().clone(),
       album.release_date().clone(),
-      album.parental_rating().map(i16::from),
+      (*album.parental_rating()) as i16,
       album.created_at(),
       album.updated_at()
     )
@@ -84,7 +84,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
       album.name(),
       album.cover().clone(),
       album.release_date().clone(),
-      album.parental_rating().map(i16::from),
+      *album.parental_rating() as i16,
       album.updated_at()
     )
     .execute(&mut *trx)
@@ -243,7 +243,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
         .name(result.name)
         .album_type(result.album_type.parse().unwrap())
         .cover(result.cover)
-        .parental_rating(result.parental_rating.map(|value| value as u8))
+        .parental_rating(result.parental_rating as u8)
         .release_date(result.release_date)
         .created_at(result.created_at)
         .updated_at(result.updated_at)
@@ -422,7 +422,7 @@ mod tests {
     let album = domain::album::AlbumBuilder::from(album)
       .name(String::from("test_album_updated"))
       .cover(Some(String::from("test_cover")))
-      .parental_rating(Some(16))
+      .parental_rating(16)
       .release_date(chrono::NaiveDate::from_ymd_opt(2021, 1, 1))
       .build();
 
