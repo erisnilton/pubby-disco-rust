@@ -3,6 +3,8 @@ use std::{collections::HashSet, iter};
 use crate::*;
 use sqlx::Postgres;
 
+use super::many_to_many::ManyToManyBuilder;
+
 pub struct SqlxAlbumRepository {
   db: sqlx::Pool<Postgres>,
 }
@@ -24,6 +26,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
       self.db.begin().await.map_err(|error| {
         crate::domain::album::repository::Error::DatabaseError(error.to_string())
       })?;
+
     sqlx::query!(
       r#"
       INSERT INTO "album" ("id", "name", "album_type", "cover", "release_date", "parental_rating", "created_at", "updated_at")
@@ -40,21 +43,16 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
     )
     .execute(&mut *trx)
     .await
-    .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))?;
+    .map_err(|err| domain::album::repository::Error::DatabaseError(format!("Falha ao associar artistas: {}", err.to_string())))?;
 
-    for artist_id in album.artist_ids().iter() {
-      sqlx::query!(
-        r#"
-        INSERT INTO album_artist (album_id, artist_id)
-        VALUES ($1, $2)
-        "#,
-        Into::<uuid::Uuid>::into(album.id().clone()),
-        Into::<uuid::Uuid>::into(artist_id.clone())
-      )
-      .execute(&mut *trx)
+    ManyToManyBuilder::new()
+      .table("album_artist")
+      .column("album_id")
+      .related_column("artist_id")
+      .build()
+      .insert_many(&mut *trx, album.id(), album.artist_ids())
       .await
       .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))?;
-    }
 
     trx
       .commit()
@@ -91,104 +89,14 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
     .await
     .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))?;
 
-    let old_artist = {
-      let result = sqlx::query!(
-        r#"
-          SELECT "artist_id" FROM "album_artist" WHERE "album_id" = $1 
-        "#,
-        Into::<uuid::Uuid>::into(album.id().clone())
-      )
-      .fetch_all(&mut *trx)
+    ManyToManyBuilder::new()
+      .table("album_artist")
+      .column("album_id")
+      .related_column("artist_id")
+      .build()
+      .update(&mut trx, album.id(), album.artist_ids())
       .await
       .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))?;
-
-      result
-        .into_iter()
-        .map(|value| shared::vo::UUID4::new(value.artist_id).unwrap())
-        .collect::<HashSet<shared::vo::UUID4>>()
-    };
-
-    let (to_delete_artist, to_insert_artist) = {
-      let mut to_delete: HashSet<uuid::Uuid> = HashSet::new();
-      let mut to_insert: HashSet<uuid::Uuid> = HashSet::new();
-      let all_artist = album
-        .artist_ids()
-        .clone()
-        .into_iter()
-        .chain(old_artist.clone())
-        .collect::<HashSet<shared::vo::UUID4>>();
-
-      for artist_id in all_artist {
-        if !old_artist.contains(&artist_id) {
-          to_insert.insert(artist_id.into());
-          continue;
-        }
-        if !album.artist_ids().contains(&artist_id) {
-          to_delete.insert(artist_id.into());
-          continue;
-        }
-      }
-
-      (to_delete, to_insert)
-    };
-
-    // Exclui os artistas que não estão mais no album
-    if !to_delete_artist.is_empty() {
-      let bindings = iter::repeat(())
-        .enumerate()
-        .map(|(i, _)| format!("${}", i + 1))
-        .take(to_delete_artist.len())
-        .collect::<Vec<String>>()
-        .join(",");
-      let query = format!(
-        r#"DELETE FROM "album_artist" WHERE "artist_id" IN ({})"#,
-        bindings
-      );
-
-      let query = {
-        let mut query = sqlx::query(&query);
-
-        for value in to_delete_artist.into_iter() {
-          query = query.bind(value);
-        }
-
-        query
-      };
-
-      query
-        .execute(&mut *trx)
-        .await
-        .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))?;
-    }
-
-    // Insere os Novos artistas
-    if !to_insert_artist.is_empty() {
-      let bindings = iter::repeat(())
-        .enumerate()
-        .map(|(i, _)| format!("($1,${})", i + 2))
-        .take(to_insert_artist.len())
-        .collect::<Vec<String>>()
-        .join(",");
-      let sql = format!(
-        r#"INSERT INTO "album_artist"("album_id", "artist_id") VALUES {}"#,
-        bindings
-      );
-
-      let query = {
-        let mut query = sqlx::query(&sql).bind(Into::<uuid::Uuid>::into(album.id().clone()));
-
-        for value in to_insert_artist.into_iter() {
-          query = query.bind(value);
-        }
-
-        query
-      };
-
-      query
-        .execute(&mut *trx)
-        .await
-        .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))?;
-    }
 
     trx
       .commit()

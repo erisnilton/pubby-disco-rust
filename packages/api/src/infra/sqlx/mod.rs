@@ -9,6 +9,7 @@ pub use activity_repository::SqlxActivityRepository;
 pub use album_repository::*;
 pub use artist_repository::*;
 pub use genre_repository::*;
-pub mod macros;
 pub use media_repository::*;
 pub use user_repository::*;
+
+pub mod many_to_many;
