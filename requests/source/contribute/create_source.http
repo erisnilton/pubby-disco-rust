@@ -1,0 +1,9 @@
+POST http://localhost:8080/contribute/source
+Content-Type: application/json
+Cookie: session_id=O+QVNPYIRa9CyUbph9BkX6979tUA2ayLd1vLa7H3YlZbOT0dPOX+VSWpIdqidLRoD1oEqvaVNGu3f1vVT%2FXoMe9ugl26+796IXvdi1NmhgEb2Q%3D%3D;
+
+{
+  "source_type": "Youtube",
+  "src": "https://www.youtube.com/watch?v=qpgTC9MDx1o",
+  "media_id": "50276085-9780-4352-8ad7-bde738c8de31"
+}

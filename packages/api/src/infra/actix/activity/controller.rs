@@ -14,6 +14,7 @@ async fn aprove_activity(
   let mut artist_repository = di::artist::repositories::ArtistRepository::new(&app_state);
   let mut album_reposirtory = di::album::repositories::AlbumRepository::new(&app_state);
   let mut media_repository = di::media::repositories::MediaRepository::new(&app_state);
+  let mut source_repository = di::source::repositories::SourceRepository::new(&app_state);
 
   let actor = crate::infra::actix::utils::get_actor(&mut user_repository, &session).await;
 
@@ -28,6 +29,7 @@ async fn aprove_activity(
     &mut artist_repository,
     &mut album_reposirtory,
     &mut media_repository,
+    &mut source_repository,
     domain::activity::stories::approve::Input { activity_id, actor },
   )
   .await;

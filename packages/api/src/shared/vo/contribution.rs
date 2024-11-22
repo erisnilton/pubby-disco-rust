@@ -6,6 +6,7 @@ pub enum CollaborativeEntityName {
   Artist,
   Album,
   Media,
+  Source,
 }
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -14,6 +15,7 @@ pub enum Contribution {
   Artist(domain::artist::contribution::Contribution),
   Album(domain::album::contribution::Contribution),
   Media(domain::media::contribution::Contribution),
+  Source(domain::source::contribution::Contribution),
 }
 
 impl Default for Contribution {

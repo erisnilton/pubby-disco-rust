@@ -38,6 +38,7 @@ impl From<domain::activity::stories::approve::Error> for ErrorResponse {
         ErrorResponse::Forbidden(String::from("User is not a curator"))
       }
       domain::activity::stories::approve::Error::MediaApplyError(error) => error.into(),
+      domain::activity::stories::approve::Error::SourceApplyError(error) => error.into(),
     }
   }
 }

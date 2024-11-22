@@ -33,3 +33,9 @@ pub mod media {
     pub use crate::infra::sqlx::SqlxMediaRepository as MediaRepository;
   }
 }
+
+pub mod source {
+  pub mod repositories {
+    pub use crate::infra::sqlx::SqlxSourceRepository as SourceRepository;
+  }
+}

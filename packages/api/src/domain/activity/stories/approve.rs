@@ -10,6 +10,7 @@ pub enum Error {
   ArtistApplyError(crate::domain::artist::stories::apply_changes::Error),
   AlbumApplyError(crate::domain::album::stories::apply_changes::Error),
   MediaApplyError(crate::domain::media::stories::apply_changes::Error),
+  SourceApplyError(crate::domain::source::stories::apply_changes::Error),
 }
 
 #[derive(Debug, Clone)]
@@ -24,6 +25,7 @@ pub async fn execute(
   artist_repository: &mut impl crate::domain::artist::repository::ArtistRepository,
   album_repository: &mut impl crate::domain::album::repository::AlbumRepository,
   media_repository: &mut impl crate::domain::media::repository::MediaRepository,
+  source_repository: &mut impl crate::domain::source::repository::SourceRepository,
   input: Input,
 ) -> Result<crate::domain::activity::Activity, Error> {
   if !input.actor.is_curator() {
@@ -76,6 +78,14 @@ pub async fn execute(
         )
         .await
         .map_err(Error::MediaApplyError)?;
+      }
+      crate::shared::vo::Contribution::Source(contribution) => {
+        crate::domain::source::stories::apply_changes::execute(
+          source_repository,
+          contribution.clone(),
+        )
+        .await
+        .map_err(Error::SourceApplyError)?;
       }
     }
 
