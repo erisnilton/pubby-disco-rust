@@ -13,12 +13,12 @@ pub trait GenreRepository {
   /**
    * Cria um novo gênero musical.
    */
-  fn create(&mut self, genre: Genre) -> impl Future<Output = Result<Genre, Error>>;
+  fn create(&mut self, genre: &Genre) -> impl Future<Output = Result<(), Error>>;
 
   /**
    * Atualiza um gênero musical.
    */
-  fn update(&mut self, genre: Genre) -> impl Future<Output = Result<Genre, Error>>;
+  fn update(&mut self, genre: &Genre) -> impl Future<Output = Result<(), Error>>;
 
   /**
    * Busca um gênero musical pelo seu identificador e retorna o gênero musical encontrado ou None caso não exista.

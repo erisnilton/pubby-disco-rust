@@ -50,7 +50,7 @@ impl GenreRepository for SqlxGenreRepository {
     Ok(None)
   }
 
-  async fn create(&mut self, genre: Genre) -> Result<Genre, Error> {
+  async fn create(&mut self, genre: &Genre) -> Result<(), Error> {
     let input = genre.clone();
 
     sqlx::query!(
@@ -71,10 +71,10 @@ impl GenreRepository for SqlxGenreRepository {
     .execute(&self.db)
     .await
     .map_err(|err| Error::DatabaseError(err.to_string()))?;
-    Ok(genre)
+    Ok(())
   }
 
-  async fn update(&mut self, genre: Genre) -> Result<Genre, Error> {
+  async fn update(&mut self, genre: &Genre) -> Result<(), Error> {
     let input = genre.clone();
 
     sqlx::query!(
@@ -96,7 +96,7 @@ impl GenreRepository for SqlxGenreRepository {
     .await
     .map_err(|err| Error::DatabaseError(err.to_string()))?;
 
-    Ok(genre)
+    Ok(())
   }
 
   async fn delete_by_id(&mut self, id: &UUID4) -> Result<(), Error> {
@@ -147,7 +147,7 @@ mod tests {
     clean(&app_state.db).await;
 
     repository_genre
-      .create(genre.clone())
+      .create(&genre)
       .await
       .expect("Falha ao criar Gênero");
 
@@ -191,7 +191,7 @@ mod tests {
 
     clean(&app_state.db).await;
 
-    repository_genre.create(genre.clone()).await.unwrap();
+    repository_genre.create(&genre).await.unwrap();
 
     let genre = GenreBuilder::from(genre)
       .name(String::from("Test 2"))
@@ -199,7 +199,7 @@ mod tests {
       .build();
 
     repository_genre
-      .update(genre.clone())
+      .update(&genre)
       .await
       .expect("Falha ao atualizar Gênero");
 
@@ -244,7 +244,7 @@ mod tests {
     clean(&app_state.db).await;
 
     repository_genre
-      .create(genre.clone())
+      .create(&genre)
       .await
       .expect("Falha ao criar Gênero");
 

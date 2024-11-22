@@ -23,7 +23,7 @@ impl domain::artist::repository::ArtistRepository for InMemoryArtistRepository {
     let artist = self
       .artists
       .values()
-      .find(|artist| artist.slug == *slug)
+      .find(|artist| artist.slug() == slug)
       .cloned();
     Ok(artist)
   }
@@ -32,7 +32,7 @@ impl domain::artist::repository::ArtistRepository for InMemoryArtistRepository {
     &mut self,
     input: &domain::artist::Artist,
   ) -> Result<domain::artist::Artist, domain::artist::repository::Error> {
-    self.artists.insert(input.id.to_string(), input.clone());
+    self.artists.insert(input.id().to_string(), input.clone());
     Ok(input.clone())
   }
 
@@ -40,7 +40,7 @@ impl domain::artist::repository::ArtistRepository for InMemoryArtistRepository {
     &mut self,
     input: &domain::artist::Artist,
   ) -> Result<domain::artist::Artist, domain::artist::repository::Error> {
-    self.artists.insert(input.id.to_string(), input.clone());
+    self.artists.insert(input.id().to_string(), input.clone());
     Ok(input.clone())
   }
 
@@ -69,37 +69,36 @@ pub mod tests {
 
   #[tokio::test]
   async fn test_find_by_slug() {
-    let artist = domain::artist::Artist {
-      name: String::from("name"),
-      slug: shared::vo::Slug::new("slug").unwrap(),
-      country: Some(String::from("BR")),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .name(String::from("name"))
+      .slug(shared::vo::Slug::new("slug").unwrap())
+      .country(Some(String::from("BR")))
+      .build();
 
     let mut artists = HashMap::new();
 
-    artists.insert(artist.id.to_string(), artist.clone());
+    artists.insert(artist.id().to_string(), artist.clone());
 
     let mut repo = InMemoryArtistRepository { artists };
 
-    let result = repo.find_by_slug(&artist.slug).await.unwrap();
+    let result = repo.find_by_slug(artist.slug()).await.unwrap();
 
     assert_eq!(result, Some(artist));
   }
 
   #[tokio::test]
   async fn test_find_by_slug_not_found() {
-    let artist = domain::artist::Artist {
-      name: String::from("name"),
-      slug: shared::vo::Slug::new("slug").unwrap(),
-      country: Some(String::from("BR")),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .name(String::from("name"))
+      .slug(shared::vo::Slug::new("slug").unwrap())
+      .country(Some(String::from("BR")))
+      .build();
+
     let artists = HashMap::new();
     let mut repo = InMemoryArtistRepository { artists };
 
     let result = repo
-      .find_by_slug(&artist.slug)
+      .find_by_slug(artist.slug())
       .await
       .expect("Error finding artist");
 
@@ -108,31 +107,30 @@ pub mod tests {
 
   #[tokio::test]
   async fn test_create() {
-    let artist = domain::artist::Artist {
-      name: String::from("name"),
-      slug: shared::vo::Slug::new("slug").unwrap(),
-      country: Some(String::from("BR")),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .name(String::from("name"))
+      .slug(shared::vo::Slug::new("slug").unwrap())
+      .country(Some(String::from("BR")))
+      .build();
+
     let artists = HashMap::new();
     let mut repo = InMemoryArtistRepository { artists };
 
     let result = repo.create(&artist).await.expect("Error creating artist");
-    assert_eq!(result.id, artist.id);
+    assert_eq!(result.id(), artist.id());
   }
 
   #[tokio::test]
   async fn test_update() {
-    let artist = domain::artist::Artist {
-      name: String::from("name"),
-      slug: shared::vo::Slug::new("slug").unwrap(),
-      country: Some(String::from("BR")),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .name(String::from("name"))
+      .slug(shared::vo::Slug::new("slug").unwrap())
+      .country(Some(String::from("BR")))
+      .build();
 
     let mut artists = HashMap::new();
 
-    artists.insert(artist.id.to_string(), artist.clone());
+    artists.insert(artist.id().to_string(), artist.clone());
 
     let mut repo = InMemoryArtistRepository { artists };
 
@@ -143,21 +141,20 @@ pub mod tests {
 
   #[tokio::test]
   async fn test_find_by_id() {
-    let artist = domain::artist::Artist {
-      name: String::from("name"),
-      slug: shared::vo::Slug::new("slug").unwrap(),
-      country: Some(String::from("BR")),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .name(String::from("name"))
+      .slug(shared::vo::Slug::new("slug").unwrap())
+      .country(Some(String::from("BR")))
+      .build();
 
     let mut artists = HashMap::new();
 
-    artists.insert(artist.id.to_string(), artist.clone());
+    artists.insert(artist.id().to_string(), artist.clone());
 
     let mut repo = InMemoryArtistRepository { artists };
 
     let result = repo
-      .find_by_id(&artist.id)
+      .find_by_id(artist.id())
       .await
       .expect("Error finding artist");
 

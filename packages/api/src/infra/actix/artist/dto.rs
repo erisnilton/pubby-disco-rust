@@ -55,10 +55,10 @@ pub struct ArtistPresenter {
 impl From<domain::artist::Artist> for ArtistPresenter {
   fn from(value: domain::artist::Artist) -> Self {
     Self {
-      id: value.id.to_string(),
-      name: value.name,
-      slug: value.slug,
-      country: value.country,
+      id: value.id().to_string(),
+      name: value.name().to_string(),
+      slug: value.slug().clone(),
+      country: value.country().clone(),
     }
   }
 }

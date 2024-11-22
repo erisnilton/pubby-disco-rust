@@ -20,3 +20,19 @@ impl From<crate::domain::media::repository::Error> for crate::infra::actix::erro
     }
   }
 }
+
+impl From<crate::domain::media::stories::contribute::Error>
+  for crate::infra::actix::errors::ErrorResponse
+{
+  fn from(value: crate::domain::media::stories::contribute::Error) -> Self {
+    match value {
+      crate::domain::media::stories::contribute::Error::ActivityRepositoryError(error) => {
+        error.into()
+      }
+      crate::domain::media::stories::contribute::Error::MediaNotFound => {
+        crate::infra::actix::errors::ErrorResponse::NotFound(String::from("Media not found"))
+      }
+      crate::domain::media::stories::contribute::Error::MediaRepositoryError(error) => error.into(),
+    }
+  }
+}

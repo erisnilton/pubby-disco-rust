@@ -43,6 +43,12 @@ impl From<UUID4> for uuid::Uuid {
   }
 }
 
+impl From<uuid::Uuid> for UUID4 {
+  fn from(value: uuid::Uuid) -> Self {
+    UUID4(value.to_string())
+  }
+}
+
 impl Serialize for UUID4 {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where

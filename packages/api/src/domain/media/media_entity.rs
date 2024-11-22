@@ -1,3 +1,5 @@
+use std::{fmt::Display, str::FromStr};
+
 use domain_proc_macros::Entity;
 
 use crate::shared::{util::naive_now, vo::Slug};
@@ -6,6 +8,27 @@ use crate::shared::{util::naive_now, vo::Slug};
 pub enum MediaType {
   Song,
   Instrumental,
+}
+
+impl Display for MediaType {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      MediaType::Song => write!(f, "Song"),
+      MediaType::Instrumental => write!(f, "Instrumental"),
+    }
+  }
+}
+
+impl FromStr for MediaType {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "Instrumental" => Ok(MediaType::Instrumental),
+      "Song" => Ok(MediaType::Song),
+      _ => Err(format!("Invalid MediaType: {}", s)),
+    }
+  }
 }
 
 #[derive(Debug, Entity, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

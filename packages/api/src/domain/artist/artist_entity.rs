@@ -1,15 +1,15 @@
+use domain_proc_macros::Entity;
+
 use crate::shared::util::naive_now;
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Entity, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Artist {
-  pub id: crate::shared::vo::UUID4,
-
-  pub slug: crate::shared::vo::Slug,
-  pub name: String,
-  pub country: Option<String>,
-
-  pub created_at: chrono::NaiveDateTime,
-  pub updated_at: chrono::NaiveDateTime,
+  id: crate::shared::vo::UUID4,
+  slug: crate::shared::vo::Slug,
+  name: String,
+  country: Option<String>,
+  created_at: chrono::NaiveDateTime,
+  updated_at: chrono::NaiveDateTime,
 }
 
 impl Artist {

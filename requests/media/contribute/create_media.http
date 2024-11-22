@@ -1,0 +1,10 @@
+POST http://localhost:8080/contribute/media
+Content-Type: application/json
+Cookie: session_id=O+QVNPYIRa9CyUbph9BkX6979tUA2ayLd1vLa7H3YlZbOT0dPOX+VSWpIdqidLRoD1oEqvaVNGu3f1vVT%2FXoMe9ugl26+796IXvdi1NmhgEb2Q%3D%3D;
+
+{
+  "name": "Quadro Negro",
+  "media_type": "Song",
+  "interpreter_ids": ["4d171119-0ff4-4fd2-b75e-614f20221bbe"],
+  "album_ids": ["b9d5b052-06a9-4af7-8d3f-80f4c3b3c47a"]
+}

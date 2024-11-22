@@ -1,0 +1,7 @@
+PATCH  http://localhost:8080/contribute/genre/5ce0c5ad-1a57-4874-b195-c72b2feb938b
+Content-Type: application/json
+Cookie: session_id=O+QVNPYIRa9CyUbph9BkX6979tUA2ayLd1vLa7H3YlZbOT0dPOX+VSWpIdqidLRoD1oEqvaVNGu3f1vVT%2FXoMe9ugl26+796IXvdi1NmhgEb2Q%3D%3D;
+
+{
+  "slug": "popular"
+}

@@ -9,14 +9,15 @@ pub struct CreateArtistInput {
 
 impl From<CreateArtistInput> for crate::domain::artist::Artist {
   fn from(value: CreateArtistInput) -> Self {
-    Self {
-      name: value.name.clone(),
-      slug: value
-        .slug
-        .unwrap_or_else(|| crate::shared::vo::Slug::generate(&value.name)),
-      country: value.country.clone(),
-      ..Default::default()
-    }
+    Self::builder()
+      .name(value.name.clone())
+      .slug(
+        value
+          .slug
+          .unwrap_or_else(|| crate::shared::vo::Slug::generate(&value.name)),
+      )
+      .country(value.country.clone())
+      .build()
   }
 }
 

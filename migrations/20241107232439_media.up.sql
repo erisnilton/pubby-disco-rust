@@ -9,8 +9,8 @@ CREATE TABLE "media" (
     "slug" VARCHAR(255) NOT NULL,
     "cover" VARCHAR(255),
     "release_date" DATE,
-    "is_single" BOOLEAN DEFAULT FALSE,
-    "parental_rating" SMALLINT,
+    "is_single" BOOLEAN DEFAULT FALSE NOT NULL,
+    "parental_rating" SMALLINT DEFAULT 0 NOT NULL,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

@@ -46,7 +46,7 @@ pub fn derive_entity(input: TokenStream) -> TokenStream {
     Some(quote! {
       pub fn #setter_name(&mut self, #field_name: #ty) {
           self.#field_name = #field_name;
-          self.updated_at = chrono::Utc::now().naive_utc();
+          self.updated_at = chrono::Timelike::with_nanosecond(&chrono::Utc::now().naive_utc(),0).unwrap();
       }
     })
   });

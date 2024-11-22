@@ -1,3 +1,4 @@
-PATCH  http://localhost:8080/activities/4a2c0a81-ce17-4bb0-b128-cbc1a75f487b/approve
+PATCH  http://localhost:8080/activities/3580dfe2-a81f-48b7-8425-953e602c5ee8/approve
 Content-Type: application/json
-Cookie: session_id=V1b3Bdhb8TQLJAqsnlWVFlDqv0xWAeCZVuYRJgdvk0b6z46nklkTbQq2IwLrIrIjD3cVzDsIM+%2F4W72li0cZBCl2NE7POnokG111p7VZMIKZRw%3D%3D;
+Cookie: session_id=ROkwP7CPfKNS8iY+0YeKxqGtNhjniLLeKQ%2FaHnyzeJNyzYMJ%2FVyszwHMR0fGpS2ij8VaZlFsDw8KS7OzYnPFxfrhq5IBXDI4IpQhNLl0HCp5ug%3D%3D;
+

@@ -25,14 +25,14 @@ impl GenreRepository for InMemoryGenreRepository {
     Ok(self.genres.get(&id.to_string()).cloned())
   }
 
-  async fn create(&mut self, genre: Genre) -> Result<Genre, crate::domain::genre::Error> {
+  async fn create(&mut self, genre: &Genre) -> Result<(), crate::domain::genre::Error> {
     self.genres.insert(genre.id().to_string(), genre.clone());
-    Ok(genre)
+    Ok(())
   }
 
-  async fn update(&mut self, genre: Genre) -> Result<Genre, crate::domain::genre::Error> {
+  async fn update(&mut self, genre: &Genre) -> Result<(), crate::domain::genre::Error> {
     self.genres.insert(genre.id().to_string(), genre.clone());
-    Ok(genre)
+    Ok(())
   }
 
   async fn delete_by_id(

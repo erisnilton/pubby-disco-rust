@@ -13,7 +13,7 @@ pub async fn execute(
   match input {
     crate::domain::genre::contribution::Contribution::Create(genre) => {
       repository_genre
-        .create(genre)
+        .create(&genre)
         .await
         .map_err(Error::RepositoryError)?;
       Ok(())
@@ -24,7 +24,7 @@ pub async fn execute(
     } => {
       genre.apply_changes(&changes);
       repository_genre
-        .update(genre)
+        .update(&genre)
         .await
         .map_err(Error::RepositoryError)?;
       Ok(())

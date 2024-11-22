@@ -1,3 +1,4 @@
+use shared::{util::trim_datetime, vo::UUID4};
 use sqlx::{query, Postgres};
 
 use crate::*;
@@ -24,12 +25,12 @@ impl domain::artist::repository::ArtistRepository for SqlxArtistRepository {
         INSERT INTO "artist" ("id", "name", "slug", "country", "created_at", "updated_at")
         VALUES ($1, $2, $3, $4, $5, $6)
       "#,
-      Into::<uuid::Uuid>::into(input.id.clone()),
-      input.name,
-      input.slug.to_string(),
-      input.country,
-      input.created_at,
-      input.updated_at,
+      Into::<uuid::Uuid>::into(input.id().clone()),
+      input.name(),
+      input.slug().to_string(),
+      input.country().clone(),
+      trim_datetime(*input.created_at()),
+      trim_datetime(*input.updated_at()),
     )
     .execute(&self.db)
     .await
@@ -47,11 +48,11 @@ impl domain::artist::repository::ArtistRepository for SqlxArtistRepository {
         SET "name" = $2, "slug" = $3, "country" = $4, "updated_at" = $5
         WHERE "id" = $1
       "#,
-      Into::<uuid::Uuid>::into(input.id.clone()),
-      input.name,
-      input.slug.to_string(),
-      input.country,
-      input.updated_at,
+      Into::<uuid::Uuid>::into(input.id().clone()),
+      input.name(),
+      input.slug().to_string(),
+      input.country().clone(),
+      trim_datetime(*input.updated_at()),
     )
     .execute(&self.db)
     .await
@@ -74,13 +75,15 @@ impl domain::artist::repository::ArtistRepository for SqlxArtistRepository {
     .fetch_optional(&self.db)
     .await
     .map_err(|err| domain::artist::repository::Error::DatabaseError(err.to_string()))?;
-    Ok(artist.map(|artist| crate::domain::artist::Artist {
-      id: shared::vo::UUID4::new(artist.id).unwrap_or_default(),
-      name: artist.name,
-      slug: shared::vo::Slug::new(&artist.slug).unwrap_or_default(),
-      country: artist.country,
-      created_at: artist.created_at,
-      updated_at: artist.updated_at,
+    Ok(artist.map(|artist| {
+      crate::domain::artist::Artist::builder()
+        .id(shared::vo::UUID4::new(artist.id).unwrap_or_default())
+        .name(artist.name)
+        .slug(shared::vo::Slug::new(&artist.slug).unwrap_or_default())
+        .country(artist.country)
+        .created_at(trim_datetime(artist.created_at))
+        .updated_at(trim_datetime(artist.updated_at))
+        .build()
     }))
   }
 
@@ -118,13 +121,15 @@ impl domain::artist::repository::ArtistRepository for SqlxArtistRepository {
     .await
     .map_err(|err| domain::artist::repository::Error::DatabaseError(err.to_string()))?;
 
-    Ok(artist.map(|artist| crate::domain::artist::Artist {
-      id: shared::vo::UUID4::new(artist.id).unwrap_or_default(),
-      name: artist.name,
-      slug: shared::vo::Slug::new(&artist.slug).unwrap_or_default(),
-      country: artist.country,
-      created_at: artist.created_at,
-      updated_at: artist.updated_at,
+    Ok(artist.map(|artist| {
+      crate::domain::artist::Artist::builder()
+        .id(UUID4::from(artist.id))
+        .name(artist.name)
+        .slug(shared::vo::Slug::new(&artist.slug).unwrap_or_default())
+        .country(artist.country)
+        .created_at(trim_datetime(artist.created_at))
+        .updated_at(trim_datetime(artist.updated_at))
+        .build()
     }))
   }
 }
@@ -157,13 +162,12 @@ pub mod tests {
 
     let mut artist_repository = SqlxArtistRepository::new(&app_state);
 
-    let artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID).unwrap(),
-      name: String::from("Test"),
-      slug: shared::vo::Slug::new("test_create_artist").unwrap(),
-      country: Some(String::from("BR")),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID).unwrap())
+      .name(String::from("Test"))
+      .slug(shared::vo::Slug::new("test_create_artist").unwrap())
+      .country(Some(String::from("BR")))
+      .build();
 
     artist_repository
       .create(&artist)
@@ -171,7 +175,7 @@ pub mod tests {
       .expect("Falha ao criar artista");
 
     let result = artist_repository
-      .find_by_id(&artist.id)
+      .find_by_id(artist.id())
       .await
       .expect("Falha ao buscar artista")
       .expect("Artista não cadastrado");
@@ -205,20 +209,19 @@ pub mod tests {
 
     let mut artist_repository = SqlxArtistRepository::new(&app_state);
 
-    let mut artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID).unwrap(),
-      name: String::from("Test"),
-      slug: shared::vo::Slug::new("test_update_artist").unwrap(),
-      country: Some(String::from("BR")),
-      ..Default::default()
-    };
+    let mut artist = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID).unwrap())
+      .name(String::from("Test"))
+      .slug(shared::vo::Slug::new("test_update_artist").unwrap())
+      .country(Some(String::from("BR")))
+      .build();
 
     artist_repository
       .create(&artist)
       .await
       .expect("Falha ao criar artista");
 
-    artist.name = String::from("Test Update");
+    artist.set_name(String::from("Test Update"));
 
     artist_repository
       .update(&artist)
@@ -226,7 +229,7 @@ pub mod tests {
       .expect("Falha ao atualizar artista");
 
     let result = artist_repository
-      .find_by_id(&artist.id)
+      .find_by_id(artist.id())
       .await
       .expect("Falha ao buscar artista")
       .expect("Artista não cadastrado");
@@ -259,13 +262,12 @@ pub mod tests {
 
     let mut artist_repository = SqlxArtistRepository::new(&app_state);
 
-    let artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID).unwrap(),
-      name: String::from("Test"),
-      slug: shared::vo::Slug::new("test_find_by_slug").unwrap(),
-      country: Some(String::from("BR")),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID).unwrap())
+      .name(String::from("Test"))
+      .slug(shared::vo::Slug::new("test_find_by_slug").unwrap())
+      .country(Some(String::from("BR")))
+      .build();
 
     artist_repository
       .create(&artist)
@@ -273,7 +275,7 @@ pub mod tests {
       .expect("Falha ao criar artista");
 
     let result = artist_repository
-      .find_by_slug(&artist.slug)
+      .find_by_slug(artist.slug())
       .await
       .expect("Falha ao buscar artista")
       .expect("Artista não cadastrado");
@@ -306,13 +308,12 @@ pub mod tests {
 
     let mut artist_repository = SqlxArtistRepository::new(&app_state);
 
-    let artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID).unwrap(),
-      name: String::from("Test"),
-      slug: shared::vo::Slug::new("test_delete_by_id").unwrap(),
-      country: Some(String::from("BR")),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID).unwrap())
+      .name(String::from("Test"))
+      .slug(shared::vo::Slug::new("test_delete_by_id").unwrap())
+      .country(Some(String::from("BR")))
+      .build();
 
     artist_repository
       .create(&artist)
@@ -320,12 +321,12 @@ pub mod tests {
       .expect("Falha ao criar artista");
 
     artist_repository
-      .delete_by_id(&artist.id)
+      .delete_by_id(artist.id())
       .await
       .expect("Falha ao deletar artista");
 
     let result = artist_repository
-      .find_by_id(&artist.id)
+      .find_by_id(artist.id())
       .await
       .expect("Falha ao buscar artista");
 
@@ -357,13 +358,12 @@ pub mod tests {
 
     let mut artist_repository = SqlxArtistRepository::new(&app_state);
 
-    let artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID).unwrap(),
-      name: String::from("Test"),
-      slug: shared::vo::Slug::new("test_find_by_id").unwrap(),
-      country: Some(String::from("BR")),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID).unwrap())
+      .name(String::from("Test"))
+      .slug(shared::vo::Slug::new("test_find_by_id").unwrap())
+      .country(Some(String::from("BR")))
+      .build();
 
     artist_repository
       .create(&artist)
@@ -371,7 +371,7 @@ pub mod tests {
       .expect("Falha ao criar artista");
 
     let result = artist_repository
-      .find_by_id(&artist.id)
+      .find_by_id(artist.id())
       .await
       .expect("Falha ao buscar artista")
       .expect("Artista não cadastrado");

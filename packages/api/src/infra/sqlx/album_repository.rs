@@ -1,4 +1,4 @@
-use std::{collections::HashSet, iter};
+use std::collections::HashSet;
 
 use crate::*;
 use sqlx::Postgres;
@@ -204,6 +204,7 @@ mod tests {
   use std::collections::HashSet;
 
   use domain::{album::repository::AlbumRepository, artist::repository::ArtistRepository};
+  use shared::vo::{Slug, UUID4};
   use sqlx::Postgres;
 
   use super::*;
@@ -248,12 +249,11 @@ mod tests {
     let mut artist_repository = infra::sqlx::SqlxArtistRepository::new(&app_state);
     let mut album_repository = SqlxAlbumRepository::new(&app_state);
 
-    let artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new("8115d6e2-e15f-42dc-8858-edd305805a7d").unwrap(),
-      name: "test_artist".to_string(),
-      slug: shared::vo::Slug::new("test-create-album-artist").unwrap(),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .id(UUID4::new("8115d6e2-e15f-42dc-8858-edd305805a7d").unwrap())
+      .name(String::from("test_artist"))
+      .slug(Slug::new("test-create-album-artist").unwrap())
+      .build();
 
     artist_repository
       .create(&artist)
@@ -265,7 +265,7 @@ mod tests {
       .name(String::from("test_album"))
       .artist_ids({
         let mut set = HashSet::new();
-        set.insert(artist.id.clone());
+        set.insert(artist.id().clone());
         set
       })
       .build();
@@ -283,7 +283,7 @@ mod tests {
 
     assert_eq!(
       album_artist.artist_id,
-      artist.id.into(),
+      uuid::Uuid::from(artist.id().clone()),
       "Artista não foi relacionado ao album"
     );
     assert_eq!(
@@ -406,19 +406,18 @@ mod tests {
       .await
       .expect("Erro ao criar album");
 
-    let artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID).unwrap(),
-      name: "test_artist".to_string(),
-      slug: shared::vo::Slug::new("test-update-album-set-artist").unwrap(),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID).unwrap())
+      .name(String::from("test_artist"))
+      .slug(shared::vo::Slug::new("test-update-album-set-artist").unwrap())
+      .build();
 
     artist_repository
       .create(&artist)
       .await
       .expect("Erro ao criar artista");
 
-    album.artist_ids_mut().insert(artist.id.clone());
+    album.artist_ids_mut().insert(artist.id().clone());
 
     album_repository
       .update(&album)
@@ -482,12 +481,11 @@ mod tests {
     let mut artist_repository = infra::sqlx::SqlxArtistRepository::new(&app_state);
     let mut album_repository = SqlxAlbumRepository::new(&app_state);
 
-    let artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID).unwrap(),
-      name: "test_artist".to_string(),
-      slug: shared::vo::Slug::new("test-update-album-remove-artist").unwrap(),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID).unwrap())
+      .name(String::from("test_artist"))
+      .slug(shared::vo::Slug::new("test-update-album-remove-artist").unwrap())
+      .build();
 
     artist_repository
       .create(&artist)
@@ -499,7 +497,7 @@ mod tests {
       .name("test_album".to_string())
       .artist_ids({
         let mut set = HashSet::new();
-        set.insert(artist.id.clone());
+        set.insert(artist.id().clone());
         set
       })
       .build();
@@ -575,19 +573,17 @@ mod tests {
     let mut artist_repository = infra::sqlx::SqlxArtistRepository::new(&app_state);
     let mut album_repository = SqlxAlbumRepository::new(&app_state);
 
-    let artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID).unwrap(),
-      name: "test_artist".to_string(),
-      slug: shared::vo::Slug::new("test-update-album-replace-artist").unwrap(),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID).unwrap())
+      .name(String::from("test_artist"))
+      .slug(shared::vo::Slug::new("test-update-album-replace-artist").unwrap())
+      .build();
 
-    let artist_2 = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID_2).unwrap(),
-      name: "test_artist_2".to_string(),
-      slug: shared::vo::Slug::new("test-update-album-replace-artist_2").unwrap(),
-      ..Default::default()
-    };
+    let artist_2 = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID_2).unwrap())
+      .name(String::from("test_artist_2"))
+      .slug(shared::vo::Slug::new("test-update-album-replace-artist_2").unwrap())
+      .build();
 
     artist_repository
       .create(&artist)
@@ -604,7 +600,7 @@ mod tests {
       .name("test_album".to_string())
       .artist_ids({
         let mut set = HashSet::new();
-        set.insert(artist.id.clone());
+        set.insert(artist.id().clone());
         set
       })
       .build();
@@ -617,7 +613,7 @@ mod tests {
     let artists_ids = album.artist_ids_mut();
 
     artists_ids.clear();
-    artists_ids.insert(artist_2.id.clone());
+    artists_ids.insert(artist_2.id().clone());
 
     album_repository
       .update(&album)
@@ -684,19 +680,17 @@ mod tests {
     let mut artist_repository = infra::sqlx::SqlxArtistRepository::new(&app_state);
     let mut album_repository = SqlxAlbumRepository::new(&app_state);
 
-    let artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID).unwrap(),
-      name: "test_artist".to_string(),
-      slug: shared::vo::Slug::new("test-update-album-insert-artist").unwrap(),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID).unwrap())
+      .name(String::from("test_artist"))
+      .slug(shared::vo::Slug::new("test-update-album-insert-artist").unwrap())
+      .build();
 
-    let artist_2 = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID_2).unwrap(),
-      name: "test_artist_2".to_string(),
-      slug: shared::vo::Slug::new("test-update-album-insert-artist_2").unwrap(),
-      ..Default::default()
-    };
+    let artist_2 = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID_2).unwrap())
+      .name(String::from("test_artist_2"))
+      .slug(shared::vo::Slug::new("test-update-album-insert-artist_2").unwrap())
+      .build();
 
     artist_repository
       .create(&artist)
@@ -713,7 +707,7 @@ mod tests {
       .name("test_album".to_string())
       .artist_ids({
         let mut set = HashSet::new();
-        set.insert(artist.id.clone());
+        set.insert(artist.id().clone());
         set
       })
       .build();
@@ -723,7 +717,7 @@ mod tests {
       .await
       .expect("Erro ao criar album");
 
-    album.artist_ids_mut().insert(artist_2.id.clone());
+    album.artist_ids_mut().insert(artist_2.id().clone());
 
     album_repository
       .update(&album)
@@ -789,19 +783,17 @@ mod tests {
     let mut artist_repository = infra::sqlx::SqlxArtistRepository::new(&app_state);
     let mut album_repository = SqlxAlbumRepository::new(&app_state);
 
-    let artist = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID).unwrap(),
-      name: "test_artist".to_string(),
-      slug: shared::vo::Slug::new("test-update-album-remove-a-artist").unwrap(),
-      ..Default::default()
-    };
+    let artist = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID).unwrap())
+      .name(String::from("test_artist"))
+      .slug(shared::vo::Slug::new("test-update-album-remove-a-artist").unwrap())
+      .build();
 
-    let artist_2 = domain::artist::Artist {
-      id: shared::vo::UUID4::new(ARTIST_ID_2).unwrap(),
-      name: "test_artist_2".to_string(),
-      slug: shared::vo::Slug::new("test-update-album-remove-a-artist_2").unwrap(),
-      ..Default::default()
-    };
+    let artist_2 = domain::artist::Artist::builder()
+      .id(shared::vo::UUID4::new(ARTIST_ID_2).unwrap())
+      .name(String::from("test_artist_2"))
+      .slug(shared::vo::Slug::new("test-update-album-remove-a-artist_2").unwrap())
+      .build();
 
     artist_repository
       .create(&artist)
@@ -817,8 +809,8 @@ mod tests {
       .name("test_album".to_string())
       .artist_ids({
         let mut set = HashSet::new();
-        set.insert(artist.id.clone());
-        set.insert(artist_2.id.clone());
+        set.insert(artist.id().clone());
+        set.insert(artist_2.id().clone());
         set
       })
       .build();
@@ -828,7 +820,7 @@ mod tests {
       .await
       .expect("Erro ao criar album");
 
-    album.artist_ids_mut().remove(&artist_2.id);
+    album.artist_ids_mut().remove(&artist_2.id());
 
     album_repository
       .update(&album)
