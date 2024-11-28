@@ -1,6 +1,13 @@
+use domain::artist::Artist;
 use shared::vo::Slug;
 
 use crate::*;
+
+#[derive(Debug, serde::Deserialize)]
+pub struct FindAllQuery {
+  pub search: Option<String>,
+  pub country: Option<String>,
+}
 
 #[derive(Debug, serde::Deserialize, validator::Validate)]
 pub struct CreateArtistDTO {
@@ -59,6 +66,17 @@ impl From<domain::artist::Artist> for ArtistPresenter {
       name: value.name().to_string(),
       slug: value.slug().clone(),
       country: value.country().clone(),
+    }
+  }
+}
+
+impl From<shared::paged::Paged<Artist>> for shared::paged::Paged<ArtistPresenter> {
+  fn from(value: shared::paged::Paged<Artist>) -> Self {
+    Self {
+      items: value.items.into_iter().map(ArtistPresenter::from).collect(),
+      page: value.page,
+      total_items: value.total_items,
+      total_pages: value.total_pages,
     }
   }
 }

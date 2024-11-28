@@ -1,4 +1,9 @@
-use shared::{util::trim_datetime, vo::UUID4};
+use domain::artist::{repository::FindAllQuery, Artist};
+use shared::{
+  paged::{PageQueryParams, Paged},
+  util::trim_datetime,
+  vo::UUID4,
+};
 use sqlx::{query, Postgres};
 
 use crate::*;
@@ -131,6 +136,123 @@ impl domain::artist::repository::ArtistRepository for SqlxArtistRepository {
         .updated_at(trim_datetime(artist.updated_at))
         .build()
     }))
+  }
+
+  async fn find_all(
+    &mut self,
+    query: &FindAllQuery,
+  ) -> Result<Paged<domain::artist::Artist>, domain::artist::repository::Error> {
+    let (count, items) = tokio::join!(
+      async {
+        let mut builder = sqlx::QueryBuilder::new(r#"SELECT COUNT("id") FROM "artist""#);
+
+        if query.search.is_some() || query.country.is_some() {
+          let mut has_filters = false;
+          builder.push(r#" WHERE"#);
+
+          if let Some(country) = &query.country {
+            builder.push(r#" "country"="#).push_bind(country);
+            has_filters = true;
+          }
+
+          if let Some(search) = &query.search {
+            if has_filters {
+              builder.push(r#" AND "#);
+            }
+            builder
+              .push(r#" ( "name" ILIKE '%' || "#)
+              .push_bind(search)
+              .push(r#" || '%' OR "slug" ILIKE '%' || "#)
+              .push_bind(search)
+              .push(r#" || '%')"#);
+            has_filters = true;
+          }
+        }
+
+        builder
+          .build_query_scalar::<Option<i64>>()
+          .fetch_one(&self.db)
+          .await
+          .map_err(|err| domain::artist::repository::Error::DatabaseError(err.to_string()))
+          .map(|result| result.unwrap_or(0) as usize)
+      },
+      async {
+        #[derive(sqlx::FromRow)]
+        struct Record {
+          id: uuid::Uuid,
+          name: String,
+          slug: String,
+          country: Option<String>,
+          created_at: chrono::NaiveDateTime,
+          updated_at: chrono::NaiveDateTime,
+        }
+        let page_params = PageQueryParams::from(query.page.clone());
+
+        let mut builder = sqlx::QueryBuilder::new(
+          r#"SELECT "id", "name", "slug", "country", "created_at", "updated_at" FROM "artist""#,
+        );
+
+        if query.search.is_some() || query.country.is_some() {
+          let mut has_filters = false;
+          builder.push(r#" WHERE"#);
+
+          if let Some(country) = &query.country {
+            builder.push(r#" "country"="#).push_bind(country);
+            has_filters = true;
+          }
+
+          if let Some(search) = &query.search {
+            if has_filters {
+              builder.push(r#" AND "#);
+            }
+            builder
+              .push(r#" ( "name" ILIKE '%' || "#)
+              .push_bind(search)
+              .push(r#" || '%' OR "slug" ILIKE '%' || "#)
+              .push_bind(search)
+              .push(r#" || '%')"#);
+            has_filters = true;
+          }
+        }
+
+        if let Some(search) = &query.search {
+          builder
+            .push(r#" AND ( "name" ILIKE '%' || "#)
+            .push_bind(search)
+            .push(r#" || '%' OR "slug" ILIKE '%' || "#)
+            .push_bind(search)
+            .push(r#" || '%')"#);
+        }
+
+        builder
+          .push(" LIMIT ")
+          .push_bind(page_params.take as i32)
+          .push(" OFFSET ")
+          .push_bind(page_params.skip as i32);
+
+        builder
+          .build_query_as::<Record>()
+          .fetch_all(&self.db)
+          .await
+          .map_err(|err| domain::artist::repository::Error::DatabaseError(err.to_string()))
+          .map(|result| {
+            result
+              .into_iter()
+              .map(|row| {
+                Artist::builder()
+                  .id(UUID4::from(row.id))
+                  .name(row.name)
+                  .slug(shared::vo::Slug::from(row.slug))
+                  .country(row.country)
+                  .created_at(row.created_at)
+                  .updated_at(row.updated_at)
+                  .build()
+              })
+              .collect::<Vec<Artist>>()
+          })
+      }
+    );
+    Ok(Paged::from_tuple((count?, items?), query.page.clone()))
   }
 }
 

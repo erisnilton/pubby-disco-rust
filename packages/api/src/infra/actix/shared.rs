@@ -1,5 +1,3 @@
-use crate::domain;
-
 #[derive(Debug, serde::Deserialize)]
 pub struct PageParams {
   pub page: Option<usize>,

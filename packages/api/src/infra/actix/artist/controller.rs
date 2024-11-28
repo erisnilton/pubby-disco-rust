@@ -103,10 +103,32 @@ async fn find_by_slug(
   }
 }
 
-
+async fn find_all(
+  app_state: actix_web::web::Data<AppState>,
+  web::Query(page): web::Query<infra::actix::shared::PageParams>,
+  web::Query(filter): web::Query<super::dto::FindAllQuery>,
+) -> impl actix_web::Responder {
+  let mut artist_repository = di::artist::repositories::ArtistRepository::new(&app_state);
+  match domain::artist::stories::find_all::execute(
+    &mut artist_repository,
+    domain::artist::stories::find_all::Input {
+      page: page.into(),
+      search: filter.search,
+      country: filter.country,
+    },
+  )
+  .await
+  {
+    Ok(result) => {
+      actix_web::HttpResponse::Ok().json(shared::paged::Paged::<ArtistPresenter>::from(result))
+    }
+    Err(err) => infra::actix::errors::ErrorResponse::from(err).into(),
+  }
+}
 
 pub fn configure(config: &mut actix_web::web::ServiceConfig) {
   config
+    .route("/artists", actix_web::web::get().to(find_all))
     .route("/artists/{slug}", actix_web::web::get().to(find_by_slug))
     .route(
       "/contribute/artist",

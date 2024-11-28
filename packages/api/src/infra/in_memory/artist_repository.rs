@@ -59,6 +59,13 @@ impl domain::artist::repository::ArtistRepository for InMemoryArtistRepository {
     self.artists.remove(&id.to_string());
     Ok(())
   }
+
+  async fn find_all(
+    &mut self,
+    _query: &domain::artist::repository::FindAllQuery,
+  ) -> Result<shared::paged::Paged<domain::artist::Artist>, domain::artist::repository::Error> {
+    todo!()
+  }
 }
 
 #[cfg(test)]
