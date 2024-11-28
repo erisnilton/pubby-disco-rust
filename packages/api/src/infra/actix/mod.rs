@@ -4,6 +4,7 @@ pub mod artist;
 pub mod errors;
 pub mod genre;
 pub mod media;
+pub mod shared;
 pub mod source;
 pub mod user;
 pub mod utils;

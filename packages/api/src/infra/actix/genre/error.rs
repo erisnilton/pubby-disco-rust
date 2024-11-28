@@ -33,3 +33,22 @@ impl From<domain::genre::stories::apply_changes::Error> for ErrorResponse {
     }
   }
 }
+
+impl From<domain::genre::stories::find_by_slug::Error> for ErrorResponse {
+  fn from(value: domain::genre::stories::find_by_slug::Error) -> Self {
+    match value {
+      domain::genre::stories::find_by_slug::Error::GenreNotFound => {
+        ErrorResponse::NotFound(String::from("Genre not found"))
+      }
+      domain::genre::stories::find_by_slug::Error::RepositoryError(error) => error.into(),
+    }
+  }
+}
+
+impl From<domain::genre::stories::find_all::Error> for ErrorResponse {
+  fn from(value: domain::genre::stories::find_all::Error) -> Self {
+    match value {
+      domain::genre::stories::find_all::Error::RepositoryError(err) => err.into(),
+    }
+  }
+}

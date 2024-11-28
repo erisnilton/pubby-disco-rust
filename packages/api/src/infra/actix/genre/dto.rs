@@ -3,6 +3,12 @@ use crate::{
   shared::vo::{Slug, UUID4},
 };
 
+#[derive(Debug, serde::Deserialize)]
+pub struct FindAllQuery {
+  pub parent_id: Option<UUID4>,
+  pub search: Option<String>,
+}
+
 #[derive(Debug, serde::Deserialize, validator::Validate)]
 pub struct CreateGenreDTO {
   #[validate(length(min = 1, max = 128))]

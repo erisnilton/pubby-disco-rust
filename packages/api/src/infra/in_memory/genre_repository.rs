@@ -42,4 +42,18 @@ impl GenreRepository for InMemoryGenreRepository {
     self.genres.remove(&id.to_string());
     Ok(())
   }
+
+  async fn find_genre_and_subgenre_by_slug(
+    &mut self,
+    _slug: &crate::shared::vo::Slug,
+  ) -> Result<Option<crate::domain::genre::GenreAggregate>, crate::domain::genre::Error> {
+    todo!()
+  }
+
+  async fn find_all(
+    &mut self,
+    query: &crate::domain::genre::FindAllQuery,
+  ) -> Result<crate::shared::paged::Paged<Genre>, crate::domain::genre::Error> {
+    todo!()
+  }
 }

@@ -1,0 +1,1 @@
+GET http://localhost:8080/genres?parent_id=5ce0c5ad-1a57-4874-b195-c72b2feb938b&search=ele

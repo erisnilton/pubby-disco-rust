@@ -32,6 +32,12 @@ impl Slug {
   }
 }
 
+impl From<String> for Slug {
+  fn from(value: String) -> Self {
+    Self(value)
+  }
+}
+
 impl Display for Slug {
   fn fmt(&self, f: &mut Formatter) -> fmt::Result {
     write!(f, "{}", self.0)

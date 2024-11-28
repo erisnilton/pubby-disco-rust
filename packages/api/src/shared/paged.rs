@@ -24,7 +24,7 @@ pub type PageTuple<T> = (usize, Vec<T>);
 /**
  * Normalized pagination parameters
  */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PageQueryParams {
   pub skip: usize,
   pub take: usize,
@@ -39,7 +39,7 @@ impl Default for PageQueryParams {
 /**
  * Request pagination parameters
  */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RequestPageParams {
   pub page: usize,
   pub per_page: usize,
@@ -48,7 +48,7 @@ pub struct RequestPageParams {
 impl From<RequestPageParams> for PageQueryParams {
   fn from(params: RequestPageParams) -> Self {
     Self {
-      skip: (params.page - 1) * params.per_page,
+      skip: params.page.checked_sub(1).unwrap_or_default() * params.per_page,
       take: params.per_page,
     }
   }
