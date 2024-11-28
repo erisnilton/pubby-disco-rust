@@ -1,4 +1,9 @@
+use actix_web::web;
+use infra::actix::errors::ErrorResponse;
+
 use crate::*;
+
+use super::dto::ArtistPresenter;
 
 async fn create_artist_activity(
   app_state: actix_web::web::Data<AppState>,
@@ -85,8 +90,24 @@ async fn delete_artist(
   }
 }
 
+async fn find_by_slug(
+  app_state: actix_web::web::Data<AppState>,
+  path: actix_web::web::Path<shared::vo::Slug>,
+) -> impl actix_web::Responder {
+  let slug = path.into_inner();
+  let mut artist_repository = di::artist::repositories::ArtistRepository::new(&app_state);
+
+  match domain::artist::stories::find_by_slug::execute(&mut artist_repository, &slug).await {
+    Ok(artist) => actix_web::HttpResponse::Ok().json(ArtistPresenter::from(artist)),
+    Err(error) => ErrorResponse::from(error).into(),
+  }
+}
+
+
+
 pub fn configure(config: &mut actix_web::web::ServiceConfig) {
   config
+    .route("/artists/{slug}", actix_web::web::get().to(find_by_slug))
     .route(
       "/contribute/artist",
       actix_web::web::post().to(create_artist),

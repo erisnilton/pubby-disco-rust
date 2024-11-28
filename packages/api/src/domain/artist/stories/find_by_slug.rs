@@ -1,18 +1,27 @@
 use crate::{
-  domain::artist::{
-    repository::{ArtistRepository, Error},
-    Artist,
+  domain::{
+    self,
+    artist::{repository::ArtistRepository, Artist},
   },
   shared::vo::Slug,
 };
 
-pub async fn find_artist_by_slug(
-  repository: &mut impl ArtistRepository,
-  slug: &Slug,
-) -> Result<Option<Artist>, Error> {
-  let artist = repository.find_by_slug(slug).await?;
+pub enum Error {
+  RepositoryError(domain::artist::repository::Error),
+  ArtistNotFound,
+}
 
-  Ok(artist)
+pub async fn execute(repository: &mut impl ArtistRepository, slug: &Slug) -> Result<Artist, Error> {
+  let artist = repository
+    .find_by_slug(slug)
+    .await
+    .map_err(Error::RepositoryError)?;
+
+  if let Some(artist) = artist {
+    return Ok(artist);
+  }
+
+  Err(Error::ArtistNotFound)
 }
 
 #[cfg(test)]
