@@ -2,7 +2,7 @@ use std::{fmt::Display, str::FromStr};
 
 use domain_proc_macros::Entity;
 
-use crate::shared::util::naive_now;
+use crate::shared::{util::naive_now, vo::Slug};
 
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum AlbumType {
@@ -43,6 +43,7 @@ pub struct Album {
 
   name: String,
   album_type: AlbumType,
+  slug: Slug,
   cover: Option<String>,
   release_date: Option<chrono::NaiveDate>,
   parental_rating: u8,
@@ -74,6 +75,10 @@ impl Album {
       self.parental_rating = value;
     }
 
+    if let Some(value) = &changes.slug {
+      self.slug = value.clone();
+    }
+
     if let Some(value) = &changes.artist_ids {
       self.artist_ids = value.clone();
     }
@@ -91,6 +96,7 @@ impl Default for Album {
       name: String::new(),
       album_type: AlbumType::Album,
       cover: Some(String::new()),
+      slug: Slug::default(),
       release_date: None,
       parental_rating: 0,
       artist_ids: std::collections::HashSet::new(),

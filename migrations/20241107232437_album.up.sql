@@ -12,6 +12,7 @@ CREATE TABLE "album" (
     "name" VARCHAR(255) NOT NULL,
     "album_type" "album_type" NOT NULL DEFAULT 'Album',
     "cover" VARCHAR(255),
+    "slug" VARCHAR(255) NOT NULL,
     "release_date" DATE,
     "parental_rating" SMALLINT NOT NULL DEFAULT 0,
     
