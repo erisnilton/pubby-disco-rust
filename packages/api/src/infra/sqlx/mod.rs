@@ -14,3 +14,5 @@ pub use media_repository::*;
 pub use source_repository::*;
 pub use user_repository::*;
 pub mod many_to_many;
+
+pub mod filter_macro;

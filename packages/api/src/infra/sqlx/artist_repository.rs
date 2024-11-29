@@ -142,32 +142,16 @@ impl domain::artist::repository::ArtistRepository for SqlxArtistRepository {
     &mut self,
     query: &FindAllQuery,
   ) -> Result<Paged<domain::artist::Artist>, domain::artist::repository::Error> {
+    let artist_filter = create_filter!(FindAllQuery, builder => {
+      country(value) => builder.push(r#""country" = "#).push_bind(value.clone()),
+      search(value) => search_by!(builder, value.clone(), "name", "slug"),
+    });
+
     let (count, items) = tokio::join!(
       async {
         let mut builder = sqlx::QueryBuilder::new(r#"SELECT COUNT("id") FROM "artist""#);
 
-        if query.search.is_some() || query.country.is_some() {
-          let mut has_filters = false;
-          builder.push(r#" WHERE"#);
-
-          if let Some(country) = &query.country {
-            builder.push(r#" "country"="#).push_bind(country);
-            has_filters = true;
-          }
-
-          if let Some(search) = &query.search {
-            if has_filters {
-              builder.push(r#" AND "#);
-            }
-            builder
-              .push(r#" ( "name" ILIKE '%' || "#)
-              .push_bind(search)
-              .push(r#" || '%' OR "slug" ILIKE '%' || "#)
-              .push_bind(search)
-              .push(r#" || '%')"#);
-            has_filters = true;
-          }
-        }
+        artist_filter(&mut builder, query);
 
         builder
           .build_query_scalar::<Option<i64>>()
@@ -192,37 +176,7 @@ impl domain::artist::repository::ArtistRepository for SqlxArtistRepository {
           r#"SELECT "id", "name", "slug", "country", "created_at", "updated_at" FROM "artist""#,
         );
 
-        if query.search.is_some() || query.country.is_some() {
-          let mut has_filters = false;
-          builder.push(r#" WHERE"#);
-
-          if let Some(country) = &query.country {
-            builder.push(r#" "country"="#).push_bind(country);
-            has_filters = true;
-          }
-
-          if let Some(search) = &query.search {
-            if has_filters {
-              builder.push(r#" AND "#);
-            }
-            builder
-              .push(r#" ( "name" ILIKE '%' || "#)
-              .push_bind(search)
-              .push(r#" || '%' OR "slug" ILIKE '%' || "#)
-              .push_bind(search)
-              .push(r#" || '%')"#);
-            has_filters = true;
-          }
-        }
-
-        if let Some(search) = &query.search {
-          builder
-            .push(r#" AND ( "name" ILIKE '%' || "#)
-            .push_bind(search)
-            .push(r#" || '%' OR "slug" ILIKE '%' || "#)
-            .push_bind(search)
-            .push(r#" || '%')"#);
-        }
+        artist_filter(&mut builder, query);
 
         builder
           .push(" LIMIT ")
