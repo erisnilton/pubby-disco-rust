@@ -17,8 +17,8 @@ macro_rules! filter_params {
             $filter;
           }
           $qb.push(")");
-
-          has_filters = true
+          #[warn(unused_assignments)]
+          {has_filters = true}
         }
       )*
     };
@@ -63,8 +63,8 @@ macro_rules! search_by {
       if count > 1 {
         $qb.push(" OR ");
       }
-
-      count -= 1;
+      #[warn(unused_assignments)]
+      {count -= 1;}
     )*
   };
 }

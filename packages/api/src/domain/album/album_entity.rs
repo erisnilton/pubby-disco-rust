@@ -40,7 +40,6 @@ impl FromStr for AlbumType {
 #[derive(Entity, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Album {
   id: crate::shared::vo::UUID4,
-
   name: String,
   album_type: AlbumType,
   slug: Slug,

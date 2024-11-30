@@ -1,6 +1,11 @@
 use std::collections::HashSet;
 
 use crate::*;
+use domain::{
+  album::{album_aggregate::AlbumAggregate, Album},
+  artist::Artist,
+};
+use shared::vo::{Slug, UUID4};
 use sqlx::Postgres;
 
 use super::many_to_many::ManyToManyBuilder;
@@ -43,7 +48,7 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
     )
     .execute(&mut *trx)
     .await
-    .map_err(|err| domain::album::repository::Error::DatabaseError(format!("Falha ao associar artistas: {}", err.to_string())))?;
+    .map_err(|err| domain::album::repository::Error::DatabaseError(format!("Falha ao associar artistas: {}", err)))?;
 
     ManyToManyBuilder::new()
       .table("album_artist")
@@ -196,6 +201,86 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
       .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))?;
 
     Ok(())
+  }
+
+  async fn find_by_slug(
+    &mut self,
+    slug: &shared::vo::Slug,
+    artist_slug: &shared::vo::Slug,
+  ) -> Result<
+    Option<domain::album::album_aggregate::AlbumAggregate>,
+    domain::album::repository::Error,
+  > {
+    let result = sqlx::query!(
+      r#"
+      select "a"."id", 
+      "a"."name",
+      "a"."album_type" as "album_type: String",
+      "a"."cover",
+      "a"."slug", 
+      "a"."release_date", 
+      "a"."parental_rating", 
+      "a"."created_at", 
+      "a"."updated_at",
+      "a2"."id" as "artist_id: Option<uuid::Uuid>",
+      "a2"."name" as "artist_name: Option<String>",
+      "a2"."slug" as "artist_slug: Option<String>",
+      "a2"."country" as "artist_country: Option<String>",
+      "a2"."created_at" as "artist_created_at: Option<chrono::NaiveDateTime>",
+      "a2"."updated_at" as "artist_update_at: Option<chrono::NaiveDateTime>"
+      from "album" "a"
+      left join "album_artist" "aa" on "a"."id" = "aa"."album_id" 
+      left join "artist" "a2" on "a2"."id" = "aa"."artist_id"
+      WHERE 
+          "a"."id" IN (
+          SELECT "album"."id"
+          FROM "album"
+          JOIN "album_artist" "aa" ON "album"."id" = "aa"."album_id"
+          JOIN "artist" "a" ON "aa"."artist_id" = "a"."id"
+          WHERE "album"."slug" = $1 AND "a"."slug" = $2
+      )
+    "#,
+      slug.to_string(),
+      artist_slug.to_string(),
+    )
+    .fetch_all(&self.db)
+    .await
+    .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))?;
+
+    if result.is_empty() {
+      return Ok(None);
+    }
+
+    let album = result.first().unwrap();
+
+    let album_aggregate = AlbumAggregate::new(
+      Album::builder()
+        .id(UUID4::from(album.id))
+        .name(album.name.clone())
+        .cover(album.cover.clone())
+        .slug(Slug::from(album.slug.clone()))
+        .album_type(album.album_type.parse().unwrap())
+        .created_at(album.created_at)
+        .updated_at(album.updated_at)
+        .build(),
+      result
+        .into_iter()
+        .filter_map(|item| {
+          item.artist_id.map(|id| {
+            Artist::builder()
+              .id(UUID4::from(id))
+              .name(item.artist_name.unwrap_or_default())
+              .slug(Slug::from(item.artist_slug.unwrap_or_default()))
+              .country(item.artist_country.unwrap_or_default())
+              .created_at(item.artist_created_at.unwrap_or_default())
+              .updated_at(item.artist_update_at.unwrap_or_default())
+              .build()
+          })
+        })
+        .collect(),
+    );
+
+    Ok(Some(album_aggregate))
   }
 }
 
@@ -820,7 +905,7 @@ mod tests {
       .await
       .expect("Erro ao criar album");
 
-    album.artist_ids_mut().remove(&artist_2.id());
+    album.artist_ids_mut().remove(artist_2.id());
 
     album_repository
       .update(&album)

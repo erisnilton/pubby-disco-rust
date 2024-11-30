@@ -1,4 +1,8 @@
+use infra::actix::errors::ErrorResponse;
+
 use crate::*;
+
+use super::presenter::AlbumAggregatePresenter;
 
 async fn create_album_activity(
   app_state: actix_web::web::Data<AppState>,
@@ -85,9 +89,29 @@ async fn delete_album(
   }
 }
 
+async fn find_album_slug(
+  app_state: actix_web::web::Data<AppState>,
+  path: actix_web::web::Path<(shared::vo::Slug, shared::vo::Slug)>,
+) -> impl actix_web::Responder {
+  let (artist_slug, slug) = path.into_inner();
+
+  let mut album_repository = di::album::repositories::AlbumRepository::new(&app_state);
+
+  match domain::album::stories::find_by_slug::execute(&mut album_repository, &slug, &artist_slug)
+    .await
+  {
+    Ok(aggregate) => actix_web::HttpResponse::Ok().json(AlbumAggregatePresenter::from(aggregate)),
+    Err(error) => ErrorResponse::from(error).into(),
+  }
+}
+
 pub fn configure(config: &mut actix_web::web::ServiceConfig) {
   config
     .route("/contribute/album", actix_web::web::post().to(create_album))
+    .route(
+      "/artists/{artist_slug}/albums/{slug}",
+      actix_web::web::get().to(find_album_slug),
+    )
     .route(
       "/contribute/album/{album_id}",
       actix_web::web::patch().to(update_album),

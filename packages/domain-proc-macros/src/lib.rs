@@ -18,6 +18,7 @@ pub fn derive_entity(input: TokenStream) -> TokenStream {
     let field_name = field.ident.as_ref().unwrap();
     let ty = &field.ty;
     let mut_name = syn::Ident::new(format!("{}_mut", field_name).as_str(), field_name.span());
+    let into_name = syn::Ident::new(format!("into_{}", field_name).as_str(), field_name.span());
     quote! {
       pub fn #field_name(&self) -> &#ty {
           &self.#field_name

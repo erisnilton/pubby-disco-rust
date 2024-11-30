@@ -35,3 +35,14 @@ impl From<domain::album::stories::contribute::Error> for infra::actix::errors::E
     }
   }
 }
+
+impl From<domain::album::stories::find_by_slug::Error> for infra::actix::errors::ErrorResponse {
+  fn from(value: domain::album::stories::find_by_slug::Error) -> Self {
+    match value {
+      domain::album::stories::find_by_slug::Error::AlbumNotFound => {
+        infra::actix::errors::ErrorResponse::NotFound(String::from("Album not found"))
+      }
+      domain::album::stories::find_by_slug::Error::RepositoryError(error) => error.into(),
+    }
+  }
+}

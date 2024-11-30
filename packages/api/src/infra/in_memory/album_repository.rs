@@ -43,4 +43,15 @@ impl domain::album::repository::AlbumRepository for InMemoryAlbumRepository {
     self.albums.remove(&id.0);
     Ok(())
   }
+
+  async fn find_by_slug(
+    &mut self,
+    _slug: &shared::vo::Slug,
+    _artist_slug: &shared::vo::Slug,
+  ) -> Result<
+    Option<domain::album::album_aggregate::AlbumAggregate>,
+    domain::album::repository::Error,
+  > {
+    todo!()
+  }
 }
