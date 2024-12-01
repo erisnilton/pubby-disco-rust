@@ -5,7 +5,10 @@ use domain::{
   album::{album_aggregate::AlbumAggregate, Album},
   artist::Artist,
 };
-use shared::vo::{Slug, UUID4};
+use shared::{
+  paged::Paged,
+  vo::{Slug, UUID4},
+};
 use sqlx::Postgres;
 
 use super::many_to_many::ManyToManyBuilder;
@@ -281,6 +284,152 @@ impl domain::album::repository::AlbumRepository for SqlxAlbumRepository {
     );
 
     Ok(Some(album_aggregate))
+  }
+
+  async fn find_by(
+    &mut self,
+    query: &domain::album::repository::FindAllQuery,
+  ) -> Result<crate::shared::paged::Paged<AlbumAggregate>, domain::album::repository::Error> {
+    let filter = create_filter!(domain::album::repository::FindAllQuery, qb => {
+      search (value) => search_by!(qb, value.clone(), r#""a"."name""#, r#""a"."slug""#),
+      artist_ids (value) => {
+        qb.push(r#" "a"."id" in ( select "aa"."album_id" from album_artist aa where "aa"."artist_id" in ( "#);
+
+        let mut separated = qb.separated(", ");
+        for id in value {
+          separated.push_bind(uuid::Uuid::from(id.clone()));
+        }
+        separated.push_unseparated(")");
+      },
+      name (value) => qb.push(r#" "a"."name" = "#).push_bind(value.to_string()),
+      slug (value) => qb.push(r#" "a"."slug" = "#).push_bind(value.to_string()),
+      album_type (value) => qb.push(r#" "a"."album_type" = "#).push_bind(value.to_string()),
+      release_date (value) => qb.push(r#" "a"."release_date" = "#).push_bind(*value),
+      min_release_date (value) => qb.push(r#" "a"."release_date" >= "#).push_bind(*value),
+      max_release_date (value) => qb.push(r#" "a"."release_date" <= "#).push_bind(*value),
+      parental_rating (value) => qb.push(r#" "a"."parental_rating" = "#).push_bind(*value as i16),
+      min_parental_rating (value) => qb.push(r#" "a"."parental_rating" >= "#).push_bind(*value as i16),
+      max_parental_rating (value) => qb.push(r#" "a"."parental_rating" <= "#).push_bind(*value as i16),
+    });
+
+    let (count, items) = tokio::join!(
+      async {
+        let mut query_builder = sqlx::QueryBuilder::new(r#"select count(id) from "album" "a" "#);
+        filter(&mut query_builder, query);
+
+        query_builder
+          .build_query_scalar::<i64>()
+          .fetch_one(&self.db)
+          .await
+          .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))
+          .map(|count| count as usize)
+      },
+      async {
+        #[derive(sqlx::FromRow)]
+        struct Record {
+          id: uuid::Uuid,
+          name: String,
+          album_type: String,
+          cover: Option<String>,
+          slug: String,
+          release_date: Option<chrono::NaiveDate>,
+          parental_rating: i16,
+          created_at: chrono::NaiveDateTime,
+          updated_at: chrono::NaiveDateTime,
+          artist_id: Option<uuid::Uuid>,
+          artist_name: String,
+          artist_slug: String,
+          artist_country: Option<String>,
+          artist_created_at: chrono::NaiveDateTime,
+          artist_updated_at: chrono::NaiveDateTime,
+        }
+
+        let mut query_builder = sqlx::QueryBuilder::new(
+          r#"
+          select 
+            "a"."id",
+            "a"."name",
+            "a"."album_type"::text,
+            "a"."cover",
+            "a"."slug",
+            "a"."release_date",
+            "a"."parental_rating",
+            "a"."created_at",
+            "a"."updated_at",
+            "ar"."id" as "artist_id",
+            "ar"."name" as "artist_name",
+            "ar"."slug" as "artist_slug",
+            "ar"."country" as "artist_country",
+            "ar"."created_at" as "artist_created_at",
+            "ar"."updated_at" as "artist_updated_at"
+            from "album" "a"
+            left join "album_artist" "aa2" on "aa2"."album_id" = "a"."id"
+            left join "artist" "ar" on "ar"."id" = "aa2"."artist_id" 
+        "#,
+        );
+
+        filter(&mut query_builder, query);
+
+        let page = crate::shared::paged::PageQueryParams::from(query.page.clone());
+
+        query_builder
+          .push(" LIMIT ")
+          .push_bind(page.take as i16)
+          .push(" OFFSET ")
+          .push_bind(page.skip as i16);
+
+        query_builder
+          .build_query_as::<Record>()
+          .fetch_all(&self.db)
+          .await
+          .map_err(|err| domain::album::repository::Error::DatabaseError(err.to_string()))
+          .map(|result| {
+            result
+              .chunk_by(|a, b| a.id == b.id)
+              .map(|result| {
+                let album = result.first().unwrap();
+
+                AlbumAggregate::new(
+                  Album::builder()
+                    .id(UUID4::from(album.id))
+                    .album_type(album.album_type.parse().unwrap())
+                    .name(album.name.clone())
+                    .cover(album.cover.clone())
+                    .slug(Slug::from(album.slug.clone()))
+                    .parental_rating(album.parental_rating as u8)
+                    .release_date(album.release_date)
+                    .created_at(album.created_at)
+                    .updated_at(album.updated_at)
+                    .artist_ids(
+                      result
+                        .iter()
+                        .filter_map(|row| row.artist_id.map(UUID4::from))
+                        .collect(),
+                    )
+                    .build(),
+                  result
+                    .iter()
+                    .filter_map(|row| {
+                      row.artist_id.map(|id| {
+                        Artist::builder()
+                          .id(UUID4::from(id))
+                          .name(row.artist_name.clone())
+                          .slug(Slug::from(row.artist_slug.clone()))
+                          .country(row.artist_country.clone())
+                          .created_at(row.artist_created_at)
+                          .updated_at(row.artist_updated_at)
+                          .build()
+                      })
+                    })
+                    .collect(),
+                )
+              })
+              .collect()
+          })
+      }
+    );
+
+    Ok(Paged::from_tuple((count?, items?), query.page.clone()))
   }
 }
 

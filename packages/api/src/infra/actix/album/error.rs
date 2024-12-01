@@ -1,4 +1,8 @@
+use domain::album::album_aggregate::AlbumAggregate;
+
 use crate::*;
+
+use super::presenter::AlbumAggregatePresenter;
 
 impl From<domain::album::stories::apply_changes::Error> for infra::actix::errors::ErrorResponse {
   fn from(value: domain::album::stories::apply_changes::Error) -> Self {
@@ -43,6 +47,14 @@ impl From<domain::album::stories::find_by_slug::Error> for infra::actix::errors:
         infra::actix::errors::ErrorResponse::NotFound(String::from("Album not found"))
       }
       domain::album::stories::find_by_slug::Error::RepositoryError(error) => error.into(),
+    }
+  }
+}
+
+impl From<domain::album::stories::find_by::Error> for infra::actix::errors::ErrorResponse {
+  fn from(value: domain::album::stories::find_by::Error) -> Self {
+    match value {
+      domain::album::stories::find_by::Error::RepositoryError(error) => error.into(),
     }
   }
 }

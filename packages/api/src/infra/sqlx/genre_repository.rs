@@ -208,7 +208,6 @@ impl GenreRepository for SqlxGenreRepository {
             .push_bind(search)
             .push(r#" || '%')"#);
         }
-        println!("{:?}", builder.sql());
 
         builder
           .build_query_scalar::<Option<i64>>()
@@ -255,8 +254,6 @@ impl GenreRepository for SqlxGenreRepository {
           .push_bind(page_params.take as i32)
           .push(" OFFSET ")
           .push_bind(page_params.skip as i32);
-
-        println!("{:?}", builder.sql());
 
         builder
           .build_query_as::<Record>()

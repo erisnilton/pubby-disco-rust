@@ -55,7 +55,7 @@ macro_rules! search_by {
     let mut count = count!($($field)*);
 
     $(
-      $qb.push(concat!('"', $field, '"'));
+      $qb.push($field);
       $qb.push(" ILIKE '%' || ");
       $qb.push_bind($value);
       $qb.push(" || '%'");

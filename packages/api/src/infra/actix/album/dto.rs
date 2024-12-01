@@ -3,9 +3,30 @@ use std::collections::HashSet;
 use chrono::NaiveDate;
 
 use crate::{
-  domain, infra,
-  shared::vo::{Slug, UUID4},
+  domain::{self, album::album_aggregate::AlbumAggregate},
+  infra,
+  shared::{
+    paged::Paged,
+    vo::{Slug, UUID4},
+  },
 };
+
+use super::presenter::AlbumAggregatePresenter;
+
+#[derive(Debug, serde::Deserialize)]
+pub struct FindAllQuery {
+  pub name: Option<String>,
+  pub slug: Option<Slug>,
+  pub artist_id: Option<UUID4>,
+  pub album_type: Option<domain::album::AlbumType>,
+  pub release_date: Option<chrono::NaiveDate>,
+  pub min_release_date: Option<chrono::NaiveDate>,
+  pub max_release_date: Option<chrono::NaiveDate>,
+  pub parental_rating: Option<u8>,
+  pub min_parental_rating: Option<u8>,
+  pub max_parental_rating: Option<u8>,
+  pub search: Option<String>,
+}
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, validator::Validate)]
 pub struct CreateAlbumDTO {
@@ -72,6 +93,21 @@ impl From<UpdateAlbumDto> for domain::album::contribution::changes::Changes {
       release_date: value.release_date,
       parental_rating: value.parental_rating,
       artist_ids: value.artist_ids,
+    }
+  }
+}
+
+impl From<Paged<AlbumAggregate>> for Paged<AlbumAggregatePresenter> {
+  fn from(value: Paged<AlbumAggregate>) -> Self {
+    Self {
+      page: value.page,
+      items: value
+        .items
+        .into_iter()
+        .map(AlbumAggregatePresenter::from)
+        .collect(),
+      total_items: value.total_items,
+      total_pages: value.total_pages,
     }
   }
 }

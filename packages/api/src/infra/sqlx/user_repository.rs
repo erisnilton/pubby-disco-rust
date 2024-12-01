@@ -100,8 +100,6 @@ impl UserRepository for SqlxUserRepository {
     .await
     .map_err(|e| UserRepositoryError::InternalServerError(e.to_string()))?;
 
-    println!("=================================== {:?}", user_record);
-
     Ok(user_record.map(|record| record.into()))
   }
 

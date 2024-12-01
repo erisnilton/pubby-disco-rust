@@ -1,8 +1,9 @@
-use infra::actix::errors::ErrorResponse;
+use actix_web::web;
+use infra::actix::{errors::ErrorResponse, shared::PageParams};
 
 use crate::*;
 
-use super::presenter::AlbumAggregatePresenter;
+use super::presenter::{AlbumAggregatePresenter, AlbumPresenter};
 
 async fn create_album_activity(
   app_state: actix_web::web::Data<AppState>,
@@ -105,9 +106,42 @@ async fn find_album_slug(
   }
 }
 
+async fn find_by(
+  app_state: actix_web::web::Data<AppState>,
+  web::Query(page): web::Query<PageParams>,
+  web::Query(filter): web::Query<super::dto::FindAllQuery>,
+) -> impl actix_web::Responder {
+  let mut album_repository = di::album::repositories::AlbumRepository::new(&app_state);
+  match domain::album::stories::find_by::execute(
+    &mut album_repository,
+    domain::album::stories::find_by::Input {
+      page: page.into(),
+      slug: filter.slug,
+      name: filter.name,
+      artist_ids: filter.artist_id.map(|id| vec![id]),
+      album_type: filter.album_type,
+      release_date: filter.release_date,
+      min_release_date: filter.min_release_date,
+      max_release_date: filter.max_release_date,
+      parental_rating: filter.parental_rating,
+      min_parental_rating: filter.min_parental_rating,
+      max_parental_rating: filter.max_parental_rating,
+      search: filter.search,
+    },
+  )
+  .await
+  {
+    Ok(result) => actix_web::HttpResponse::Ok().json(
+      shared::paged::Paged::<AlbumAggregatePresenter>::from(result),
+    ),
+    Err(err) => ErrorResponse::from(err).into(),
+  }
+}
+
 pub fn configure(config: &mut actix_web::web::ServiceConfig) {
   config
     .route("/contribute/album", actix_web::web::post().to(create_album))
+    .route("/albums", actix_web::web::get().to(find_by))
     .route(
       "/artists/{artist_slug}/albums/{slug}",
       actix_web::web::get().to(find_album_slug),

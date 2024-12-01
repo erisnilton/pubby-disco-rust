@@ -54,4 +54,14 @@ impl domain::album::repository::AlbumRepository for InMemoryAlbumRepository {
   > {
     todo!()
   }
+
+  async fn find_by(
+    &mut self,
+    _query: &domain::album::repository::FindAllQuery,
+  ) -> Result<
+    crate::shared::paged::Paged<domain::album::album_aggregate::AlbumAggregate>,
+    domain::album::repository::Error,
+  > {
+    todo!()
+  }
 }

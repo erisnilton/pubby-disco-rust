@@ -39,7 +39,7 @@ impl Default for PageQueryParams {
 /**
  * Request pagination parameters
  */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct RequestPageParams {
   pub page: usize,
   pub per_page: usize,
