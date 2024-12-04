@@ -288,13 +288,13 @@ impl crate::domain::media::repository::MediaRepository for SqlxMediaRepository {
   > {
     let filter = create_filter!(crate::domain::media::repository::FindByQuery, qb => {
       search(value) => search_by!(qb, value.clone(), r#""m"."name""#, r#""m"."slug""#),
-      release_date(value) => qb.push(r#""m"."release_date" = "#).push_bind(value.clone()),
-      min_release_date(value) => qb.push(r#""m"."release_date" >= "#).push_bind(value.clone()),
-      max_release_date(value) => qb.push(r#""m"."release_date" <= "#).push_bind(value.clone()),
-      parental_rating(value) => qb.push(r#""m"."parental_rating" = "#).push_bind(value.clone() as i16),
-      min_parental_rating(value) => qb.push(r#""m"."parental_rating" >= "#).push_bind(value.clone() as i16),
-      max_parental_rating(value) => qb.push(r#""m"."parental_rating" <= "#).push_bind(value.clone() as i16),
-      is_single(value) => qb.push(r#""m"."is_single" = "#).push_bind(value.clone()),
+      release_date(value) => qb.push(r#""m"."release_date" = "#).push_bind(*value),
+      min_release_date(value) => qb.push(r#""m"."release_date" >= "#).push_bind(*value),
+      max_release_date(value) => qb.push(r#""m"."release_date" <= "#).push_bind(*value),
+      parental_rating(value) => qb.push(r#""m"."parental_rating" = "#).push_bind(*value as i16),
+      min_parental_rating(value) => qb.push(r#""m"."parental_rating" >= "#).push_bind(*value as i16),
+      max_parental_rating(value) => qb.push(r#""m"."parental_rating" <= "#).push_bind(*value as i16),
+      is_single(value) => qb.push(r#""m"."is_single" = "#).push_bind(*value),
       media_type(value) => qb.push(r#""m"."type" = "#).push_bind(value.to_string()),
       slug(value) => qb.push(r#""m"."slug" = "#).push_bind(value.to_string()),
       artist_ids(value) => {
@@ -308,7 +308,7 @@ impl crate::domain::media::repository::MediaRepository for SqlxMediaRepository {
 
         separated.push_unseparated("))");
       },
-     composer_ids(value) => {
+      composer_ids(value) => {
         qb.push(r#""m"."id" IN (SELECT "mc"."media_id" FROM "media_composer" "mc" WHERE "mc"."composer_id" IN ("#);
 
         let mut separated = qb.separated(", ");
@@ -329,8 +329,8 @@ impl crate::domain::media::repository::MediaRepository for SqlxMediaRepository {
         }
 
         separated.push_unseparated("))");
-    },
-     album_ids(value) => {
+      },
+      album_ids(value) => {
         qb.push(r#""m"."id" IN (SELECT "ma"."media_id" FROM "media_album" "ma" WHERE "ma"."album_id" IN ("#);
 
         let mut separated = qb.separated(", ");
@@ -341,7 +341,6 @@ impl crate::domain::media::repository::MediaRepository for SqlxMediaRepository {
 
         separated.push_unseparated("))");
       },
-
     });
 
     let (count, items) = tokio::join!(
@@ -575,11 +574,13 @@ mod tests {
 
     // Load .env file
     dotenvy::dotenv().ok();
+
     let app_state = AppState::default().await;
     let mut artist_repository = artist_repository::SqlxArtistRepository::new(&app_state);
     let mut album_repository = album_repository::SqlxAlbumRepository::new(&app_state);
     let mut media_repository = SqlxMediaRepository::new(&app_state);
     let mut genre_repository = genre_repository::SqlxGenreRepository::new(&app_state);
+
     async fn cleanup(db: &sqlx::pool::Pool<Postgres>) {
       sqlx::query!(
         r#"
