@@ -36,3 +36,13 @@ impl From<crate::domain::media::stories::contribute::Error>
     }
   }
 }
+
+impl From<crate::domain::media::stories::find_by::Error>
+  for crate::infra::actix::errors::ErrorResponse
+{
+  fn from(value: crate::domain::media::stories::find_by::Error) -> Self {
+    match value {
+      crate::domain::media::stories::find_by::Error::RepositoryError(error) => error.into(),
+    }
+  }
+}

@@ -1,3 +1,15 @@
+use crate::*;
+
+use domain::{
+  artist::Artist,
+  media::{media_aggregate::MediaAggregate, Media},
+  source::source_entity::Source,
+};
+use shared::{
+  paged::{PageQueryParams, Paged},
+  vo::{Slug, UUID4},
+};
+
 pub struct SqlxMediaRepository {
   db: sqlx::Pool<sqlx::Postgres>,
 }
@@ -266,6 +278,270 @@ impl crate::domain::media::repository::MediaRepository for SqlxMediaRepository {
     .await
     .map_err(to_database_error)?;
     Ok(())
+  }
+  async fn find_by(
+    &mut self,
+    query: &crate::domain::media::repository::FindByQuery,
+  ) -> Result<
+    crate::shared::paged::Paged<crate::domain::media::media_aggregate::MediaAggregate>,
+    crate::domain::media::repository::Error,
+  > {
+    let filter = create_filter!(crate::domain::media::repository::FindByQuery, qb => {
+      search(value) => search_by!(qb, value.clone(), r#""m"."name""#, r#""m"."slug""#),
+      release_date(value) => qb.push(r#""m"."release_date" = "#).push_bind(value.clone()),
+      min_release_date(value) => qb.push(r#""m"."release_date" >= "#).push_bind(value.clone()),
+      max_release_date(value) => qb.push(r#""m"."release_date" <= "#).push_bind(value.clone()),
+      parental_rating(value) => qb.push(r#""m"."parental_rating" = "#).push_bind(value.clone() as i16),
+      min_parental_rating(value) => qb.push(r#""m"."parental_rating" >= "#).push_bind(value.clone() as i16),
+      max_parental_rating(value) => qb.push(r#""m"."parental_rating" <= "#).push_bind(value.clone() as i16),
+      is_single(value) => qb.push(r#""m"."is_single" = "#).push_bind(value.clone()),
+      media_type(value) => qb.push(r#""m"."type" = "#).push_bind(value.to_string()),
+      slug(value) => qb.push(r#""m"."slug" = "#).push_bind(value.to_string()),
+      artist_ids(value) => {
+        qb.push(r#""m"."id" IN (SELECT "mi"."media_id" FROM "media_interpreter" "mi" WHERE "mi"."interpreter_id" IN ("#);
+
+        let mut separated = qb.separated(", ");
+
+        for id in value {
+          separated.push_bind(uuid::Uuid::from(id.clone()));
+        }
+
+        separated.push_unseparated("))");
+      },
+     composer_ids(value) => {
+        qb.push(r#""m"."id" IN (SELECT "mc"."media_id" FROM "media_composer" "mc" WHERE "mc"."composer_id" IN ("#);
+
+        let mut separated = qb.separated(", ");
+
+        for id in value {
+          separated.push_bind(uuid::Uuid::from(id.clone()));
+        }
+
+        separated.push_unseparated("))");
+      },
+      genre_ids(value) => {
+        qb.push(r#""m"."id" IN (SELECT "mg"."media_id" FROM "media_genre" "mg" WHERE "mg"."genre_id" IN ("#);
+
+        let mut separated = qb.separated(", ");
+
+        for id in value {
+          separated.push_bind(uuid::Uuid::from(id.clone()));
+        }
+
+        separated.push_unseparated("))");
+    },
+     album_ids(value) => {
+        qb.push(r#""m"."id" IN (SELECT "ma"."media_id" FROM "media_album" "ma" WHERE "ma"."album_id" IN ("#);
+
+        let mut separated = qb.separated(", ");
+
+        for id in value {
+          separated.push_bind(uuid::Uuid::from(id.clone()));
+        }
+
+        separated.push_unseparated("))");
+      },
+
+    });
+
+    let (count, items) = tokio::join!(
+      async {
+        let mut query_builder = sqlx::QueryBuilder::new(r#"SELECT COUNT("id") FROM "media""#);
+        filter(&mut query_builder, query);
+
+        query_builder
+          .build_query_scalar::<i64>()
+          .fetch_one(&self.db)
+          .await
+          .map_err(to_database_error)
+          .map(|count| count as usize)
+      },
+      async {
+        #[derive(Debug, Clone, sqlx::FromRow)]
+        struct Record {
+          id: uuid::Uuid,
+          name: String,
+          media_type: String,
+          slug: String,
+          release_date: Option<chrono::NaiveDate>,
+          cover: Option<String>,
+          parental_rating: i16,
+          is_single: bool,
+          created_at: chrono::NaiveDateTime,
+          updated_at: chrono::NaiveDateTime,
+        }
+        let mut query_builder = sqlx::QueryBuilder::new(
+          r#"
+            select 
+            "m"."id",
+            "m"."name", 
+            "m"."type"::text as "media_type", 
+            "m"."slug", 
+            "m"."release_date",
+            "m"."cover",
+            "m"."parental_rating",
+            "m"."is_single",
+            "m"."created_at",
+            "m"."updated_at"
+            from "media" "m" 
+          "#,
+        );
+
+        filter(&mut query_builder, query);
+
+        let page = PageQueryParams::from(query.page.clone());
+
+        query_builder
+          .push(" LIMIT ")
+          .push_bind(page.take as i64)
+          .push(" OFFSET ")
+          .push_bind(page.skip as i64)
+          .build_query_as::<Record>()
+          .fetch_all(&self.db)
+          .await
+          .map_err(to_database_error)
+          .map(|result| {
+            result
+              .into_iter()
+              .map(|media| {
+                let db = &self.db;
+
+                async move {
+                  let (composers, interpreters, sources) = tokio::join!(
+                    async {
+                      sqlx::query!(
+                        r#"
+                        SELECT
+                        "a"."id",
+                        "a"."name",
+                        "a"."slug",
+                        "a"."country",
+                        "a"."created_at",
+                        "a"."updated_at"
+                        FROM "media_composer" "mc"
+                        LEFT JOIN "artist" "a" ON "a"."id" = "mc"."composer_id"
+                        WHERE mc."media_id" = $1
+                        "#,
+                        media.id.clone()
+                      )
+                      .fetch_all(db)
+                      .await
+                      .map_err(to_database_error)
+                      .map(|result| {
+                        result
+                          .into_iter()
+                          .map(|result| {
+                            Artist::builder()
+                              .id(UUID4::from(result.id))
+                              .name(result.name)
+                              .slug(Slug::from(result.slug))
+                              .country(result.country)
+                              .created_at(result.created_at)
+                              .updated_at(result.updated_at)
+                              .build()
+                          })
+                          .collect::<Vec<_>>()
+                      })
+                    },
+                    async {
+                      sqlx::query!(
+                        r#"
+                        SELECT
+                        "a"."id",
+                        "a"."name",
+                        "a"."slug",
+                        "a"."country",
+                        "a"."created_at",
+                        "a"."updated_at"
+                        FROM "media_interpreter" "mi"
+                        LEFT JOIN "artist" "a" ON "a"."id" = "mi"."interpreter_id"
+                        WHERE mi."media_id" = $1
+                        "#,
+                        media.id.clone()
+                      )
+                      .fetch_all(db)
+                      .await
+                      .map_err(to_database_error)
+                      .map(|result| {
+                        result
+                          .into_iter()
+                          .map(|result| {
+                            Artist::builder()
+                              .id(UUID4::from(result.id))
+                              .name(result.name)
+                              .slug(Slug::from(result.slug))
+                              .country(result.country)
+                              .created_at(result.created_at)
+                              .updated_at(result.updated_at)
+                              .build()
+                          })
+                          .collect::<Vec<_>>()
+                      })
+                    },
+                    async {
+                      sqlx::query!(
+                        r#"
+                          SELECT
+                          "s"."id",
+                          "s"."source_type"::TEXT,
+                          "s"."src",
+                          "s"."media_id",
+                          "s"."created_at",
+                          "s"."updated_at"
+                          FROM "source" "s"
+                          WHERE "s"."media_id" = $1
+                          "#,
+                        media.id.clone()
+                      )
+                      .fetch_all(db)
+                      .await
+                      .map_err(to_database_error)
+                      .map(|result| {
+                        result
+                          .into_iter()
+                          .map(|result| {
+                            Source::builder()
+                              .id(UUID4::from(result.id))
+                              .src(result.src)
+                              .source_type(result.source_type.unwrap_or_default().parse().unwrap())
+                              .created_at(result.created_at)
+                              .updated_at(result.updated_at)
+                              .build()
+                          })
+                          .collect::<Vec<_>>()
+                      })
+                    }
+                  );
+
+                  let media = Media::builder()
+                    .id(UUID4::from(media.id))
+                    .name(media.name.clone())
+                    .media_type(media.media_type.parse().unwrap())
+                    .slug(Slug::from(media.slug.clone()))
+                    .release_date(media.release_date)
+                    .cover(media.cover.clone())
+                    .parental_rating(media.parental_rating as u8)
+                    .is_single(media.is_single)
+                    .created_at(media.created_at)
+                    .updated_at(media.updated_at)
+                    .build();
+                  Ok(MediaAggregate {
+                    media,
+                    composers: composers?,
+                    interpreters: interpreters?,
+                    sources: sources?,
+                  })
+                    as Result<MediaAggregate, crate::domain::media::repository::Error>
+                }
+              })
+              .collect::<Vec<_>>()
+          })
+      }
+    );
+
+    let items = futures::future::try_join_all(items?).await?;
+
+    Ok(Paged::from_tuple((count?, items), query.page.clone()))
   }
 }
 

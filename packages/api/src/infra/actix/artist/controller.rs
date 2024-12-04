@@ -3,7 +3,7 @@ use infra::actix::errors::ErrorResponse;
 
 use crate::*;
 
-use super::dto::ArtistPresenter;
+use super::presenter::ArtistPresenter;
 
 async fn create_artist_activity(
   app_state: actix_web::web::Data<AppState>,

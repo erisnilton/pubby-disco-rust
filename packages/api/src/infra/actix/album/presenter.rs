@@ -1,6 +1,6 @@
 use crate::{
   domain::album::{album_aggregate::AlbumAggregate, Album},
-  infra::actix::artist::dto::ArtistPresenter,
+  infra::actix::artist::presenter::ArtistPresenter,
   shared::vo::{Slug, UUID4},
 };
 

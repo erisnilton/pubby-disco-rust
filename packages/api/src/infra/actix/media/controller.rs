@@ -1,3 +1,8 @@
+use std::collections::HashSet;
+
+use actix_web::web;
+use infra::actix::shared::PageParams;
+
 use crate::*;
 
 async fn create_media_activity(
@@ -86,9 +91,45 @@ async fn delete_media(
   }
 }
 
+async fn find_by(
+  app_state: actix_web::web::Data<AppState>,
+  web::Query(page): web::Query<PageParams>,
+  web::Query(filter): web::Query<super::dto::FindByQuery>,
+) -> impl actix_web::Responder {
+  let mut media_repository = di::media::repositories::MediaRepository::new(&app_state);
+  match domain::media::stories::find_by::execute(
+    &mut media_repository,
+    domain::media::stories::find_by::Input {
+      page: page.into(),
+      search: filter.search,
+      release_date: filter.release_date,
+      min_release_date: filter.min_release_date,
+      max_release_date: filter.max_release_date,
+      parental_rating: filter.parental_rating,
+      min_parental_rating: filter.min_parental_rating,
+      max_parental_rating: filter.max_parental_rating,
+      is_single: filter.is_single,
+      media_type: filter.media_type,
+      slug: filter.slug,
+      artist_ids: filter.artist_id.map(|id| HashSet::from([id.clone()])),
+      composer_ids: filter.composer_id.map(|id| HashSet::from([id.clone()])),
+      genre_ids: filter.genre_id.map(|id| HashSet::from([id.clone()])),
+      album_ids: filter.album_id.map(|id| HashSet::from([id.clone()])),
+    },
+  )
+  .await
+  {
+    Ok(media) => actix_web::HttpResponse::Ok().json(crate::shared::paged::Paged::<
+      infra::actix::media::presenter::MediaAggregatePresenter,
+    >::from(media)),
+    Err(error) => infra::actix::errors::ErrorResponse::from(error).into(),
+  }
+}
+
 pub fn configure(config: &mut actix_web::web::ServiceConfig) {
   config
     .route("/contribute/media", actix_web::web::post().to(create_media))
+    .route("/medias", actix_web::web::get().to(find_by))
     .route(
       "/contribute/media/{media_id}",
       actix_web::web::patch().to(update_media),

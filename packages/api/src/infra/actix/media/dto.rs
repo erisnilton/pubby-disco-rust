@@ -1,6 +1,24 @@
-use shared::vo::Slug;
+use shared::vo::{Slug, UUID4};
 
 use crate::*;
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct FindByQuery {
+  pub search: Option<String>,
+  pub release_date: Option<chrono::NaiveDate>,
+  pub min_release_date: Option<chrono::NaiveDate>,
+  pub max_release_date: Option<chrono::NaiveDate>,
+  pub parental_rating: Option<u8>,
+  pub min_parental_rating: Option<u8>,
+  pub max_parental_rating: Option<u8>,
+  pub is_single: Option<bool>,
+  pub media_type: Option<crate::domain::media::MediaType>,
+  pub slug: Option<Slug>,
+  pub artist_id: Option<UUID4>,
+  pub composer_id: Option<UUID4>,
+  pub genre_id: Option<UUID4>,
+  pub album_id: Option<UUID4>,
+}
 
 #[derive(Debug, serde::Deserialize, validator::Validate)]
 pub struct CreateMediaDTO {

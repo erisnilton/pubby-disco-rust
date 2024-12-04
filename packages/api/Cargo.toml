@@ -17,6 +17,7 @@ chrono = { workspace = true }
 domain-proc-macros = { path = "../domain-proc-macros" }
 dotenvy = "0.15.7"
 env_logger = "0.11.5"
+futures = "0.3.31"
 log = "0.4.22"
 mimalloc = "0.1.43"
 serde = { workspace = true }
