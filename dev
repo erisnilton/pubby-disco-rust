@@ -1,2 +1,8 @@
 #!/bin/bash
-cargo watch -w packages/api -x run
+cargo watch \
+  -w crates \
+  -w macros \
+  -w .env \
+  -w Cargo.toml \
+  -w Cargo.lock \
+  -x run

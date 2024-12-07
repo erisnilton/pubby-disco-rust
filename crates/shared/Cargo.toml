@@ -1,0 +1,12 @@
+[package]
+name = "shared"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+slug = "0.1.6"
+unidecode = "0.3.0"
+validator = { workspace = true }
+chrono = { workspace = true }
+serde = { workspace = true }
+uuid = { workspace = true }

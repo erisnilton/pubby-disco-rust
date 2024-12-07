@@ -1,7 +1,8 @@
 {
-    "recommendations": [
-        "tamasfe.even-better-toml",
-        "rust-lang.rust-analyzer",
-        "fill-labs.dependi"
-    ]
+  "recommendations": [
+    "tamasfe.even-better-toml",
+    "rust-lang.rust-analyzer",
+    "fill-labs.dependi",
+    "mikestead.dotenv"
+  ]
 }

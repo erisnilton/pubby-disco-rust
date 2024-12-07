@@ -1,0 +1,27 @@
+[package]
+name = "web"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-files = "0.6.6"
+actix-session = { version = "0.10.1", features = ["cookie-session"] }
+actix-web = { version = "4.9.0", default-features = false, features = [
+  "cookies",
+  "macros",
+  "compress-gzip",
+] }
+mimalloc = "0.1.43"
+config = { path = "../config" }
+shared = { path = "../shared" }
+ports = { path = "../ports" }
+domain = { path = "../domain" }
+application = { path = "../application" }
+infra = { path = "../infra" }
+chrono = { workspace = true }
+env_logger = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+validator = { workspace = true }
+sqlx = { workspace = true }
+log = { workspace = true }
